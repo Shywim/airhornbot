@@ -121,7 +121,7 @@ var CENA *SoundCollection = &SoundCollection{
 		"!cena",
 	},
 	Sounds: []*Sound{
-		createSound("realfull", 1, 21000),
+		createSound("realfull", 1, 250),
 	},
 }
 
