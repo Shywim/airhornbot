@@ -16,7 +16,7 @@ npm: static/package.json
 	cd static && npm install .
 
 gulp: $(JS_FILES)
-	cd static && gulp dist
+	cd static && ./node_modules/.bin/gulp dist
 
 .PHONY: static
 static: npm gulp
