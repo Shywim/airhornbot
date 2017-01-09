@@ -121,12 +121,7 @@ var CENA *SoundCollection = &SoundCollection{
 		"!cena",
 	},
 	Sounds: []*Sound{
-		createSound("airhorn", 1, 250),
-		createSound("echo", 1, 250),
-		createSound("full", 1, 250),
-		createSound("jc", 1, 250),
-		createSound("nameis", 1, 250),
-		createSound("spam", 1, 250),
+		createSound("realfull", 1, 21000),
 	},
 }
 
