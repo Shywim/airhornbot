@@ -1,4 +1,3 @@
-bot/bot
 *.pyc
 app/settings.py
 *.db
@@ -8,3 +7,4 @@ web
 requests.log
 dist
 node_modules
+.idea/
