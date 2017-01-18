@@ -196,6 +196,16 @@ var BLBL *SoundCollection = &SoundCollection{
 	},
 }
 
+var NONO *SoundCollection = &SoundCollection{
+	Prefix: "nono",
+	Commands: []string{
+		"!nono",
+	},
+	Sounds: []*Sound{
+		createSound("no", 1, 250),
+	},
+}
+
 var COLLECTIONS []*SoundCollection = []*SoundCollection{
 	AIRHORN,
 	KHALED,
@@ -205,6 +215,7 @@ var COLLECTIONS []*SoundCollection = []*SoundCollection{
 	BIRTHDAY,
 	WOW,
 	BLBL,
+	NONO,
 }
 
 // Create a Sound struct
