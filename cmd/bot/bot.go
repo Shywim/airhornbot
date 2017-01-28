@@ -649,6 +649,11 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	log.WithFields(log.Fields{
+		"message": m.ID,
+		"owner": m.Author.ID,
+	}).Info("Received message")
+
 	// If this is a mention, it should come from the owner (otherwise we don't care)
 	if len(m.Mentions) > 0 && m.Author.ID == OWNER && len(parts) > 0 {
 		mentioned := false
