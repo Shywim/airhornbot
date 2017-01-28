@@ -484,7 +484,6 @@ func onGuildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
 
 	for _, channel := range event.Guild.Channels {
 		if channel.ID == event.Guild.ID {
-			s.ChannelMessageSend(channel.ID, "**AIRHORN BOT READY FOR HORNING. TYPE `!AIRHORN` WHILE IN A VOICE CHANNEL TO ACTIVATE**")
 			return
 		}
 	}
@@ -731,7 +730,7 @@ func main() {
 
 	// Create a discord session
 	log.Info("Starting discord session...")
-	discord, err = discordgo.New(*Token)
+	discord, err = discordgo.New(fmt.Sprintf("Bot %v", *Token))
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
