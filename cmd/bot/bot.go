@@ -207,6 +207,36 @@ var KLED *SoundCollection = &SoundCollection{
 	},
 }
 
+var HATE *SoundCollection = &SoundCollection{
+	Prefix: "kled",
+	Commands: []string{
+		"!hate",
+	},
+	Sounds: []*Sound{
+		createSound("attackDismount12", 1, 250),
+	},
+}
+
+var DENIS *SoundCollection = &SoundCollection{
+	Prefix: "denis",
+	Commands: []string{
+		"!denis",
+	},
+	Sounds: []*Sound{
+		createSound("ah", 1, 100),
+	},
+}
+
+var LEMON *SoundCollection = &SoundCollection{
+	Prefix: "lemon",
+	Commands: []string{
+		"!lemon",
+	},
+	Sounds: []*Sound{
+		createSound("grab", 1, 100),
+	},
+}
+
 var COLLECTIONS []*SoundCollection = []*SoundCollection{
 	AIRHORN,
 	KHALED,
@@ -217,6 +247,9 @@ var COLLECTIONS []*SoundCollection = []*SoundCollection{
 	BLBL,
 	NONO,
 	KLED,
+	HATE,
+	DENIS,
+	LEMON,
 }
 
 // Create a Sound struct
