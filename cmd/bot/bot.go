@@ -183,6 +183,30 @@ var NONO *SoundCollection = &SoundCollection{
 	},
 }
 
+var KLED *SoundCollection = &SoundCollection{
+	Prefix: "kled",
+	Commands: []string{
+		"!kled",
+	},
+	Sounds: []*Sound{
+		createSound("attackDismount11", 10, 250),
+		createSound("attackDismount12", 10, 250),
+		createSound("attackMount02", 15, 250),
+		createSound("attackW100", 5, 250),
+		createSound("attackW500", 5, 250),
+		createSound("attackW900", 5, 250),
+		createSound("moveMount53", 10, 250),
+		createSound("moveMount54", 10, 250),
+		createSound("moveMount68", 30, 250),
+		createSound("select", 50, 250),
+		createSound("skaarlFlee02", 15, 250),
+		createSound("skaarlLowHealth04", 15, 250),
+		createSound("spellR5", 10, 250),
+		createSound("start04", 30, 250),
+		createSound("start05", 25, 250),
+	},
+}
+
 var COLLECTIONS []*SoundCollection = []*SoundCollection{
 	AIRHORN,
 	KHALED,
@@ -192,6 +216,7 @@ var COLLECTIONS []*SoundCollection = []*SoundCollection{
 	WOW,
 	BLBL,
 	NONO,
+	KLED,
 }
 
 // Create a Sound struct
