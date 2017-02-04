@@ -585,6 +585,7 @@ func displayBotCommands(cid string) {
 			}
 			fmt.Fprint(w, ": ")
 		}
+
 		for _, sound := range coll.Sounds {
 			fmt.Fprintf(w, "\t%s\n", sound.Name)
 		}
@@ -736,9 +737,8 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			// Bot control messages come from owner
 			if m.Author.ID == OWNER {
 				handleBotControlMessages(s, m, parts, guild)
-			} else {
-				handleMentionMessages(s, m, parts, guild)
 			}
+			handleMentionMessages(s, m, parts, guild)
 		}
 		return
 	}
