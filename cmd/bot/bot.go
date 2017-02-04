@@ -221,9 +221,10 @@ var DENIS *SoundCollection = &SoundCollection{
 	Prefix: "denis",
 	Commands: []string{
 		"!denis",
+		"!ah",
 	},
 	Sounds: []*Sound{
-		createSound("ah", 1, 100),
+		createSound("ah", 1, 250),
 	},
 }
 
@@ -233,7 +234,7 @@ var LEMON *SoundCollection = &SoundCollection{
 		"!lemon",
 	},
 	Sounds: []*Sound{
-		createSound("grab", 1, 100),
+		createSound("grab", 1, 250),
 	},
 }
 
@@ -565,6 +566,34 @@ func displayBotStats(cid string) {
 	discord.ChannelMessageSend(cid, buf.String())
 }
 
+func displayBotCommands(cid string) {
+	w := &tabwriter.Writer{}
+	buf := &bytes.Buffer{}
+
+	w.Init(buf, 0, 4, 0, ' ', 0)
+	fmt.Fprint(w, "```\n")
+	for _, coll := range COLLECTIONS {
+		if len(coll.Commands) == 1 {
+			fmt.Fprintf(w, "%s: ", coll.Commands[0])
+		} else {
+			for i, comm := range coll.Commands {
+				if i == 0 {
+					fmt.Fprintf(w, "%s", comm)
+				} else {
+					fmt.Fprintf(w, ", %s", comm)
+				}
+			}
+			fmt.Fprint(w, ": ")
+		}
+		for _, sound := range coll.Sounds {
+			fmt.Fprintf(w, "\t%s\n", sound.Name)
+		}
+	}
+	fmt.Fprint(w, "```\n")
+	w.Flush()
+	discord.ChannelMessageSend(cid, buf.String())
+}
+
 func utilSumRedisKeys(keys []string) int {
 	results := make([]*redis.StringCmd, 0)
 
@@ -655,6 +684,12 @@ func handleBotControlMessages(s *discordgo.Session, m *discordgo.MessageCreate, 
 	}
 }
 
+func handleMentionMessages(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, g *discordgo.Guild) {
+	if scontains(parts[1], "help") {
+		displayBotCommands(m.ChannelID)
+	}
+}
+
 func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if len(m.Content) <= 0 || (m.Content[0] != '!' && len(m.Mentions) < 1) {
 		return
@@ -687,8 +722,8 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		"owner": m.Author.ID,
 	}).Info("Received message")
 
-	// If this is a mention, it should come from the owner (otherwise we don't care)
-	if len(m.Mentions) > 0 && m.Author.ID == OWNER && len(parts) > 0 {
+	// If this is a mention
+	if len(m.Mentions) > 0 && len(parts) > 0 {
 		mentioned := false
 		for _, mention := range m.Mentions {
 			mentioned = (mention.ID == s.State.Ready.User.ID)
@@ -698,7 +733,12 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 		if mentioned {
-			handleBotControlMessages(s, m, parts, guild)
+			// Bot control messages come from owner
+			if m.Author.ID == OWNER {
+				handleBotControlMessages(s, m, parts, guild)
+			} else {
+				handleMentionMessages(s, m, parts, guild)
+			}
 		}
 		return
 	}
