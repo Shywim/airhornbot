@@ -238,6 +238,17 @@ var LEMON *SoundCollection = &SoundCollection{
 	},
 }
 
+var KUWAH *SoundCollection = &SoundCollection{
+	Prefix: "brenda",
+	Commands: []string{
+		"!kuwah",
+		"!quoi",
+	},
+	Sounds: []*Sound{
+		createSound("kuwah", 1, 250),
+	},
+}
+
 var COLLECTIONS []*SoundCollection = []*SoundCollection{
 	AIRHORN,
 	KHALED,
@@ -251,6 +262,7 @@ var COLLECTIONS []*SoundCollection = []*SoundCollection{
 	HATE,
 	DENIS,
 	LEMON,
+	KUWAH,
 }
 
 // Create a Sound struct
