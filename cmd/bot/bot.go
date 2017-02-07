@@ -29,7 +29,7 @@ var (
 	rcli *redis.Client
 
 	// Map of Guild id's to *Play channels, used for queuing and rate-limiting guilds
-	queues map[string]chan *Play = make(map[string]chan *Play)
+	queues = make(map[string]chan *Play)
 
 	// Sound encoding settings
 	BITRATE        = 128
@@ -77,7 +77,7 @@ type Sound struct {
 }
 
 // Array of all the sounds we have
-var AIRHORN *SoundCollection = &SoundCollection{
+var AIRHORN = &SoundCollection{
 	Prefix: "airhorn",
 	Commands: []string{
 		"!airhorn",
@@ -100,7 +100,7 @@ var AIRHORN *SoundCollection = &SoundCollection{
 	},
 }
 
-var KHALED *SoundCollection = &SoundCollection{
+var KHALED = &SoundCollection{
 	Prefix:    "another",
 	ChainWith: AIRHORN,
 	Commands: []string{
@@ -114,7 +114,7 @@ var KHALED *SoundCollection = &SoundCollection{
 	},
 }
 
-var CENA *SoundCollection = &SoundCollection{
+var CENA = &SoundCollection{
 	Prefix: "jc",
 	Commands: []string{
 		"!johncena",
@@ -125,7 +125,7 @@ var CENA *SoundCollection = &SoundCollection{
 	},
 }
 
-var COW *SoundCollection = &SoundCollection{
+var COW = &SoundCollection{
 	Prefix: "cow",
 	Commands: []string{
 		"!stan",
@@ -138,7 +138,7 @@ var COW *SoundCollection = &SoundCollection{
 	},
 }
 
-var BIRTHDAY *SoundCollection = &SoundCollection{
+var BIRTHDAY = &SoundCollection{
 	Prefix: "birthday",
 	Commands: []string{
 		"!birthday",
@@ -152,7 +152,7 @@ var BIRTHDAY *SoundCollection = &SoundCollection{
 	},
 }
 
-var WOW *SoundCollection = &SoundCollection{
+var WOW = &SoundCollection{
 	Prefix: "wow",
 	Commands: []string{
 		"!wowthatscool",
@@ -163,7 +163,7 @@ var WOW *SoundCollection = &SoundCollection{
 	},
 }
 
-var BLBL *SoundCollection = &SoundCollection{
+var BLBL = &SoundCollection{
 	Prefix: "bl",
 	Commands: []string{
 		"!blbl",
@@ -173,7 +173,7 @@ var BLBL *SoundCollection = &SoundCollection{
 	},
 }
 
-var NONO *SoundCollection = &SoundCollection{
+var NONO = &SoundCollection{
 	Prefix: "nono",
 	Commands: []string{
 		"!nono",
@@ -183,7 +183,7 @@ var NONO *SoundCollection = &SoundCollection{
 	},
 }
 
-var KLED *SoundCollection = &SoundCollection{
+var KLED = &SoundCollection{
 	Prefix: "kled",
 	Commands: []string{
 		"!kled",
@@ -207,7 +207,7 @@ var KLED *SoundCollection = &SoundCollection{
 	},
 }
 
-var HATE *SoundCollection = &SoundCollection{
+var HATE = &SoundCollection{
 	Prefix: "kled",
 	Commands: []string{
 		"!hate",
@@ -217,7 +217,7 @@ var HATE *SoundCollection = &SoundCollection{
 	},
 }
 
-var DENIS *SoundCollection = &SoundCollection{
+var DENIS = &SoundCollection{
 	Prefix: "denis",
 	Commands: []string{
 		"!denis",
@@ -228,7 +228,7 @@ var DENIS *SoundCollection = &SoundCollection{
 	},
 }
 
-var LEMON *SoundCollection = &SoundCollection{
+var LEMON = &SoundCollection{
 	Prefix: "lemon",
 	Commands: []string{
 		"!lemon",
@@ -238,7 +238,7 @@ var LEMON *SoundCollection = &SoundCollection{
 	},
 }
 
-var KUWAH *SoundCollection = &SoundCollection{
+var KUWAH = &SoundCollection{
 	Prefix: "brenda",
 	Commands: []string{
 		"!kuwah",
@@ -249,7 +249,17 @@ var KUWAH *SoundCollection = &SoundCollection{
 	},
 }
 
-var COLLECTIONS []*SoundCollection = []*SoundCollection{
+var HANDBAG = &SoundCollection{
+	Prefix: "hand",
+	Commands: []string{
+		"!handbag",
+	},
+	Sounds: []*Sound{
+		createSound("bag", 1, 250),
+	},
+}
+
+var COLLECTIONS = []*SoundCollection{
 	AIRHORN,
 	KHALED,
 	CENA,
@@ -263,6 +273,7 @@ var COLLECTIONS []*SoundCollection = []*SoundCollection{
 	DENIS,
 	LEMON,
 	KUWAH,
+	HANDBAG,
 }
 
 // Create a Sound struct
@@ -732,7 +743,7 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	log.WithFields(log.Fields{
 		"message": m.ID,
-		"owner": m.Author.ID,
+		"owner":   m.Author.ID,
 	}).Info("Received message")
 
 	// If this is a mention
