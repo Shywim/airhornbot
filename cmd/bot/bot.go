@@ -259,6 +259,16 @@ var HANDBAG = &SoundCollection{
 	},
 }
 
+var WOWBIS = &SoundCollection{
+	Prefix: "wow",
+	Commands: []string{
+		"!wow",
+	},
+	Sounds: []*Sound{
+		createSound("wow", 1, 250),
+	},
+}
+
 var COLLECTIONS = []*SoundCollection{
 	AIRHORN,
 	KHALED,
@@ -274,6 +284,7 @@ var COLLECTIONS = []*SoundCollection{
 	LEMON,
 	KUWAH,
 	HANDBAG,
+	WOWBIS,
 }
 
 // Create a Sound struct
