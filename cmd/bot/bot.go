@@ -269,6 +269,17 @@ var WOWBIS = &SoundCollection{
 	},
 }
 
+var PUTEUH = &SoundCollection{
+	Prefix: "puteuh",
+	Commands: []string{
+		"!pute",
+		"!puteuh",
+	},
+	Sounds: []*Sound{
+		createSound("pute", 1, 250),
+	},
+}
+
 var COLLECTIONS = []*SoundCollection{
 	AIRHORN,
 	KHALED,
@@ -285,6 +296,7 @@ var COLLECTIONS = []*SoundCollection{
 	KUWAH,
 	HANDBAG,
 	WOWBIS,
+	PUTEUH,
 }
 
 // Create a Sound struct
