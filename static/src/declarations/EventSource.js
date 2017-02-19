@@ -7,7 +7,6 @@ type MessageEventData = {
   unique_users: number,
   unique_guilds: number,
   unique_channels: number,
-  secret_count: number
 }
 
 declare class EventSource {

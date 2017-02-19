@@ -32,7 +32,6 @@ type State = {
   uniqueUsers: number,
   uniqueGuilds: number,
   uniqueChannels: number,
-  secretCount: number,
   showStats: boolean,
   statsHasBeenShown: boolean,
   changeCount: boolean,
@@ -69,7 +68,6 @@ const Layout = React.createClass({
       uniqueUsers: 0,
       uniqueGuilds: 0,
       uniqueChannels: 0,
-      secretCount: 0,
       showStats: false,
       statsHasBeenShown: false,
       changeCount: false,
@@ -117,7 +115,6 @@ const Layout = React.createClass({
       uniqueUsers: AirhornStatsStore.getUniqueUsers(),
       uniqueGuilds: AirhornStatsStore.getUniqueGuilds(),
       uniqueChannels: AirhornStatsStore.getUniqueChannels(),
-      secretCount: AirhornStatsStore.getSecretCount(),
       showStats: AirhornStatsStore.shouldShowStatsPanel(),
       statsHasBeenShown: this.state.statsHasBeenShown || AirhornStatsStore.shouldShowStatsPanel(),
       changeCount: this.state.count != AirhornStatsStore.getCount()
@@ -182,7 +179,6 @@ const Layout = React.createClass({
           uniqueUsers={this.state.uniqueUsers}
           uniqueGuilds={this.state.uniqueGuilds}
           uniqueChannels={this.state.uniqueChannels}
-          secretCount={this.state.secretCount}
           hasBeenShown={this.state.statsHasBeenShown}
           bottom={this.state.footerHeight} />
         <Footer

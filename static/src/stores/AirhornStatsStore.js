@@ -27,7 +27,6 @@ class AirhornStatsStore extends EventEmitter {
       let uniqueUsersRnd = Math.random();
       let uniqueGuildsRnd = Math.random();
       let uniqueChannelsRnd = Math.random();
-      let secretCountRnd = Math.random();
 
       this.receivedMessage({
         data: JSON.stringify({
