@@ -65,7 +65,9 @@ const Footer = React.createClass({
         </div>
         <div className="main-text">
           <span className="normal-text">
-            Open sourced by the team at Discord. Contribute yourself on&nbsp;
+            Open sourced by the team at <a href={Constants.DISCORD_URL}>Discord</a>.
+            Tinkered with love by Shywim.<br />
+            Contribute yourself on&nbsp;
           </span>
           <a href={Constants.GITHUB_URL}>GitHub</a>
           <a href={Constants.GITHUB_URL} className="arrow">&nbsp;➔</a>

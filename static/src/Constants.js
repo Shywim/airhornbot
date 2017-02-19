@@ -1,8 +1,8 @@
-const AIRHORN_URL = 'https://airhorn.solutions';
+const AIRHORN_URL = 'https://airhorn.shywim.fr';
 
 export default {
-  DISCORD_URL: 'https://discordapp.com?utm_source=airhornsubtext&utm_medium=website&utm_campaign=airhorn',
-  GITHUB_URL: 'https://github.com/hammerandchisel/airhornbot',
+  DISCORD_URL: 'https://discordapp.com',
+  GITHUB_URL: 'https://github.com/shywim/airhornbot',
   AIRHORN_URL,
   SMALL_ISLAND_COUNT: 12,
   UNIQUE_SMALL_ISLAND_COUNT: 6,
