@@ -9,7 +9,6 @@ let count = 0;
 let uniqueUsers = 0;
 let uniqueGuilds = 0;
 let uniqueChannels = 0;
-let secretCount = 0;
 let shouldShowStatsPanel = false;
 
 class AirhornStatsStore extends EventEmitter {
@@ -42,8 +41,6 @@ class AirhornStatsStore extends EventEmitter {
 
           unique_channels: uniqueChannelsRnd > 0.9 || uniqueChannels == 0 ||
             uniqueChannels <= uniqueGuilds ? Number.parseInt(uniqueChannels) + 1 : uniqueChannels,
-
-          secret_count: secretCountRnd > 0.95 ? Number.parseInt(secretCount) + 1 : secretCount
         })
       });
     }, 1000);
@@ -55,7 +52,6 @@ class AirhornStatsStore extends EventEmitter {
     uniqueUsers = data.unique_users || 0;
     uniqueGuilds = data.unique_guilds || 0;
     uniqueChannels = data.unique_channels || 0;
-    secretCount = data.secret_count || 0;
     this.emit('change');
   }
 
@@ -88,10 +84,6 @@ class AirhornStatsStore extends EventEmitter {
 
   getUniqueChannels(): number {
     return uniqueChannels;
-  }
-
-  getSecretCount(): number {
-    return secretCount;
   }
 
   shouldShowStatsPanel(): boolean {

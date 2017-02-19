@@ -5,6 +5,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"math/rand"
+	"net/http"
+	"os"
+	"strconv"
+	"time"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/antage/eventsource"
 	"github.com/bwmarrin/discordgo"
@@ -12,12 +19,6 @@ import (
 	"github.com/gorilla/sessions"
 	"golang.org/x/oauth2"
 	redis "gopkg.in/redis.v3"
-	"io/ioutil"
-	"math/rand"
-	"net/http"
-	"os"
-	"strconv"
-	"time"
 )
 
 var (
@@ -52,7 +53,6 @@ type CountUpdate struct {
 	UniqueUsers    string `json:"unique_users"`
 	UniqueGuilds   string `json:"unique_guilds"`
 	UniqueChannels string `json:"unique_channels"`
-	SecretCount    string `json:"secret_count"`
 }
 
 func (c *CountUpdate) ToJSON() []byte {
@@ -66,7 +66,6 @@ func NewCountUpdate() *CountUpdate {
 		usersCmd  *redis.IntCmd
 		guildsCmd *redis.IntCmd
 		chansCmd  *redis.IntCmd
-		secretCmd *redis.StringCmd
 	)
 
 	// Make a pipelined request to redis for all the counter values
@@ -75,7 +74,6 @@ func NewCountUpdate() *CountUpdate {
 		usersCmd = pipe.SCard("airhorn:a:users")
 		guildsCmd = pipe.SCard("airhorn:a:guilds")
 		chansCmd = pipe.SCard("airhorn:a:channels")
-		secretCmd = pipe.Get("airhorn:a:sound:truck")
 		return nil
 	})
 
@@ -87,17 +85,11 @@ func NewCountUpdate() *CountUpdate {
 		}).Warning("Failed to get a count update from redis")
 	}
 
-	secretCount := secretCmd.Val()
-	if secretCount == "" {
-		secretCount = "0"
-	}
-
 	return &CountUpdate{
 		Total:          totalCmd.Val(),
 		UniqueUsers:    strconv.FormatInt(usersCmd.Val(), 10),
 		UniqueGuilds:   strconv.FormatInt(guildsCmd.Val(), 10),
 		UniqueChannels: strconv.FormatInt(chansCmd.Val(), 10),
-		SecretCount:    secretCmd.Val(),
 	}
 }
 
@@ -375,7 +367,7 @@ func main() {
 		ClientSecret: *ClientSecret,
 		Scopes:       []string{"bot", "identify"},
 		Endpoint:     endpoint,
-		RedirectURL:  "http://shywim.fr:14000/callback",
+		RedirectURL:  "http://airhorn.shywim.fr/callback",
 	}
 
 	server()

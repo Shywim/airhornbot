@@ -24,7 +24,6 @@ type StatsPanelProps = {
   uniqueUsers: number,
   uniqueGuilds: number,
   uniqueChannels: number,
-  secretCount: number,
   show: boolean,
   hasBeenShown: boolean,
   bottom: number
@@ -35,7 +34,6 @@ const StatsPanel = ({
   uniqueUsers,
   uniqueGuilds,
   uniqueChannels,
-  secretCount,
   show,
   hasBeenShown,
   bottom
@@ -50,7 +48,6 @@ const StatsPanel = ({
       <StatsRow icon={Constants.Image.ICON_USERS} label="Unique Users" value={uniqueUsers} />
       <StatsRow icon={Constants.Image.ICON_SERVERS} label="Unique Servers" value={uniqueGuilds} />
       <StatsRow icon={Constants.Image.ICON_CHANNELS} label="Unique Channels" value={uniqueChannels} />
-      <StatsRow icon={Constants.Image.ICON_SECERT} label="Secret Plays" value={secretCount} />
     </div>
   );
 };
