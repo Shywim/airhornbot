@@ -388,6 +388,26 @@ func (s *Sound) Play(vc *discordgo.VoiceConnection) {
 	}
 }
 
+// Attempt to join a voice channel
+func voiceConnect(gid, cid string) (vc *discordgo.VoiceConnection, err error) {
+	log.WithFields(log.Fields{
+		"guildId":   gid,
+		"channelId": cid,
+	}).Info("Connecting to voice channel")
+	return discord.ChannelVoiceJoin(gid, cid, false, false)
+}
+
+// Attempt to close the active voice connection
+func voiceDisconnect(vc *discordgo.VoiceConnection) {
+	if vc != nil {
+		log.Info("Disconnecting active voice connection")
+		vc.Disconnect()
+		return
+	}
+
+	log.Warning("Disconnect called but there were no active voice connection")
+}
+
 // Attempts to find the current users voice channel inside a given guild
 func getCurrentVoiceChannel(user *discordgo.User, guild *discordgo.Guild) *discordgo.Channel {
 	for _, vs := range guild.VoiceStates {
@@ -508,7 +528,7 @@ func playSound(play *Play, vc *discordgo.VoiceConnection) (err error) {
 	}).Info("Playing sound")
 
 	if vc == nil {
-		vc, err = discord.ChannelVoiceJoin(play.GuildID, play.ChannelID, false, false)
+		vc, err = voiceConnect(play.GuildID, play.ChannelID)
 		// vc.Receive = false
 		if err != nil {
 			log.WithFields(log.Fields{
@@ -549,13 +569,13 @@ func playSound(play *Play, vc *discordgo.VoiceConnection) (err error) {
 	// If the queue is empty, delete it
 	time.Sleep(time.Millisecond * time.Duration(play.Sound.PartDelay))
 	delete(queues, play.GuildID)
-	vc.Disconnect()
+	voiceDisconnect(vc)
 	return nil
 }
 
 func onReady(s *discordgo.Session, event *discordgo.Ready) {
 	log.Info("Recieved READY payload")
-	s.UpdateStatus(0, "airhornbot.com")
+	s.UpdateStatus(0, "airhorn.shywim.fr")
 }
 
 func onGuildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
@@ -699,7 +719,7 @@ func airhornBomb(cid string, guild *discordgo.Guild, user *discordgo.User, cs st
 	}
 
 	play := createPlay(user, guild, AIRHORN, nil)
-	vc, err := discord.ChannelVoiceJoin(play.GuildID, play.ChannelID, true, true)
+	vc, err := voiceConnect(play.GuildID, play.ChannelID)
 	if err != nil {
 		return
 	}
@@ -708,7 +728,7 @@ func airhornBomb(cid string, guild *discordgo.Guild, user *discordgo.User, cs st
 		AIRHORN.Random().Play(vc)
 	}
 
-	vc.Disconnect()
+	voiceDisconnect(vc)
 }
 
 // Handles bot operator messages, should be refactored (lmao)
