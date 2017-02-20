@@ -18,6 +18,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/bwmarrin/discordgo"
 	"github.com/dustin/go-humanize"
+	"github.com/orcaman/concurrent-map"
 	redis "gopkg.in/redis.v3"
 )
 
@@ -29,7 +30,7 @@ var (
 	rcli *redis.Client
 
 	// Map of Guild id's to *Play channels, used for queuing and rate-limiting guilds
-	queues = make(map[string]chan *Play)
+	queues = cmap.New()
 
 	// Sound encoding settings
 	BITRATE        = 128
@@ -474,15 +475,15 @@ func enqueuePlay(user *discordgo.User, guild *discordgo.Guild, coll *SoundCollec
 	}
 
 	// Check if we already have a connection to this guild
-	//   yes, this isn't threadsafe, but its "OK" 99% of the time
-	_, exists := queues[guild.ID]
+	tmp, exists := queues.Get(guild.ID)
 
 	if exists {
-		if len(queues[guild.ID]) < MAX_QUEUE_SIZE {
-			queues[guild.ID] <- play
+		queue := tmp.(chan *Play)
+		if len(queue) < MAX_QUEUE_SIZE {
+			queue <- play
 		}
 	} else {
-		queues[guild.ID] = make(chan *Play, MAX_QUEUE_SIZE)
+		queues.Set(guild.ID, make(chan *Play, MAX_QUEUE_SIZE))
 		playSound(play, nil)
 	}
 }
@@ -534,7 +535,7 @@ func playSound(play *Play, vc *discordgo.VoiceConnection) (err error) {
 			log.WithFields(log.Fields{
 				"error": err,
 			}).Error("Failed to play sound")
-			delete(queues, play.GuildID)
+			queues.Remove(play.GuildID)
 			return err
 		}
 	}
@@ -560,15 +561,20 @@ func playSound(play *Play, vc *discordgo.VoiceConnection) (err error) {
 	}
 
 	// If there is another song in the queue, recurse and play that
-	if len(queues[play.GuildID]) > 0 {
-		play := <-queues[play.GuildID]
-		playSound(play, vc)
-		return nil
+	tmp, exists := queues.Get(play.GuildID)
+
+	if exists {
+		queue := tmp.(chan *Play)
+		if len(queue) > 0 {
+			play := <-queue
+			playSound(play, vc)
+			return nil
+		}
 	}
 
 	// If the queue is empty, delete it
 	time.Sleep(time.Millisecond * time.Duration(play.Sound.PartDelay))
-	delete(queues, play.GuildID)
+	queues.Remove(play.GuildID)
 	voiceDisconnect(vc)
 	return nil
 }
