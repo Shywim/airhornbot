@@ -326,12 +326,12 @@ func server() {
 }
 
 func broadcastLoop() {
-	var id int = 0
+	var id int
 	for {
 		time.Sleep(time.Second * 1)
 
 		es.SendEventMessage(string(NewCountUpdate().ToJSON()), "message", strconv.Itoa(id))
-		id += 1
+		id++
 	}
 }
 
@@ -374,7 +374,14 @@ func main() {
 		}
 
 		// Now start the eventsource loop for client-side stat update
-		es = eventsource.New(nil, nil)
+		es = eventsource.New(nil, func(req *http.Request) [][]byte {
+			return [][]byte{
+				[]byte("X-Accel-Buffering: no"),
+				[]byte("Access-Control-Allow-Origin: *"),
+			}
+		},
+		)
+
 		defer es.Close()
 		go broadcastLoop()
 	}
