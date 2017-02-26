@@ -75,6 +75,7 @@ const Content = React.createClass({
         </div>
         {this.getCenter()}
         <a className="add-btn" onClick={OAuthActions.start}>Add to Discord</a>
+        <a className="add-btn" onClick={OAuthActions.start} style={{marginTop: "16px"}}>Manage my Airhorn</a>
       </div>
     );
   }

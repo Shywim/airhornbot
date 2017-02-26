@@ -18,7 +18,7 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/sessions"
 	"golang.org/x/oauth2"
-	redis "gopkg.in/redis.v3"
+	redis "gopkg.in/redis.v5"
 )
 
 var (
@@ -31,8 +31,11 @@ var (
 	// Redis client (for stats)
 	rcli *redis.Client
 
-	// Oauth2 Config
-	oauthConf *oauth2.Config
+	// Oauth2 config for adding bot to a server
+	botOAuthConf *oauth2.Config
+
+	// Oauth2 config for managing bot
+	manageOAuthConf *oauth2.Config
 
 	// Used for storing session information in a cookie
 	store *sessions.CookieStore
@@ -119,6 +122,93 @@ func getSessionOrAbort(w http.ResponseWriter, r *http.Request) *sessions.Session
 	return session
 }
 
+func verifyAndOpenSession(w http.ResponseWriter, r *http.Request, s *sessions.Session) bool {
+	// Check the state string is correct
+	state := r.FormValue("state")
+	if state != s.Values["state"] {
+		log.WithFields(log.Fields{
+			"expected": s.Values["state"],
+			"received": state,
+		}).Error("Invalid OAuth state")
+		http.Redirect(w, r, "/?key_to_success=0", http.StatusTemporaryRedirect)
+		return false
+	}
+
+	errorMsg := r.FormValue("error")
+	if errorMsg != "" {
+		log.WithFields(log.Fields{
+			"error": errorMsg,
+		}).Error("Received OAuth error from provider")
+		http.Redirect(w, r, "/?key_to_success=0", http.StatusTemporaryRedirect)
+		return false
+	}
+
+	token, err := botOAuthConf.Exchange(oauth2.NoContext, r.FormValue("code"))
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"token": token,
+		}).Error("Failed to exchange token with provider")
+		http.Redirect(w, r, "/?key_to_success=0", http.StatusTemporaryRedirect)
+		return false
+	}
+
+	body, _ := json.Marshal(map[interface{}]interface{}{})
+	req, err := http.NewRequest("GET", apiBaseUrl+"/users/@me", bytes.NewBuffer(body))
+	if err != nil {
+		log.WithFields(log.Fields{
+			"body":  body,
+			"req":   req,
+			"error": err,
+		}).Error("Failed to create @me request")
+		http.Error(w, "Failed to retrieve user profile", http.StatusInternalServerError)
+		return false
+	}
+
+	req.Header.Set("Authorization", token.Type()+" "+token.AccessToken)
+	client := &http.Client{Timeout: (20 * time.Second)}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error":  err,
+			"client": client,
+			"resp":   resp,
+		}).Error("Failed to request @me data")
+		http.Error(w, "Failed to retrieve user profile", http.StatusInternalServerError)
+		return false
+	}
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"body":  resp.Body,
+		}).Error("Failed to read data from HTTP response")
+		http.Error(w, "Failed to retrieve user profile", http.StatusInternalServerError)
+		return false
+	}
+
+	user := discordgo.User{}
+	err = json.Unmarshal(respBody, &user)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"data":  respBody,
+			"error": err,
+		}).Error("Failed to parse JSON payload from HTTP response")
+		http.Error(w, "Failed to retrieve user profile", http.StatusInternalServerError)
+		return false
+	}
+
+	// Finally write some information to the session store
+	s.Values["token"] = token.AccessToken
+	s.Values["username"] = user.Username
+	s.Values["tag"] = user.Discriminator
+	delete(s.Values, "state")
+	s.Save(r, w)
+
+	return true
+}
+
 // Redirects to the oauth2
 func handleLogin(w http.ResponseWriter, r *http.Request) {
 	session := getSessionOrAbort(w, r)
@@ -134,8 +224,23 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	perms := READ_MESSAGES | SEND_MESSAGES | CONNECT | SPEAK
 
 	// Return a redirect to the ouath provider
-	url := oauthConf.AuthCodeURL(session.Values["state"].(string), oauth2.AccessTypeOnline)
+	url := botOAuthConf.AuthCodeURL(session.Values["state"].(string), oauth2.AccessTypeOnline)
 	http.Redirect(w, r, url+fmt.Sprintf("&permissions=%v", perms), http.StatusTemporaryRedirect)
+}
+
+func handleManageCallback(w http.ResponseWriter, r *http.Request) {
+	session := getSessionOrAbort(w, r)
+	if session == nil {
+		return
+	}
+
+	success := verifyAndOpenSession(w, r, session)
+	if !success {
+		return
+	}
+
+	// And redirect the user back to the dashboard
+	http.Redirect(w, r, "/manage", http.StatusTemporaryRedirect)
 }
 
 func handleCallback(w http.ResponseWriter, r *http.Request) {
@@ -144,88 +249,13 @@ func handleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check the state string is correct
-	state := r.FormValue("state")
-	if state != session.Values["state"] {
-		log.WithFields(log.Fields{
-			"expected": session.Values["state"],
-			"received": state,
-		}).Error("Invalid OAuth state")
-		http.Redirect(w, r, "/?key_to_success=0", http.StatusTemporaryRedirect)
+	success := verifyAndOpenSession(w, r, session)
+	if !success {
 		return
 	}
 
-	errorMsg := r.FormValue("error")
-	if errorMsg != "" {
-		log.WithFields(log.Fields{
-			"error": errorMsg,
-		}).Error("Received OAuth error from provider")
-		http.Redirect(w, r, "/?key_to_success=0", http.StatusTemporaryRedirect)
-		return
-	}
-
-	token, err := oauthConf.Exchange(oauth2.NoContext, r.FormValue("code"))
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-			"token": token,
-		}).Error("Failed to exchange token with provider")
-		http.Redirect(w, r, "/?key_to_success=0", http.StatusTemporaryRedirect)
-		return
-	}
-
-	body, _ := json.Marshal(map[interface{}]interface{}{})
-	req, err := http.NewRequest("GET", apiBaseUrl+"/users/@me", bytes.NewBuffer(body))
-	if err != nil {
-		log.WithFields(log.Fields{
-			"body":  body,
-			"req":   req,
-			"error": err,
-		}).Error("Failed to create @me request")
-		http.Error(w, "Failed to retrieve user profile", http.StatusInternalServerError)
-		return
-	}
-
-	req.Header.Set("Authorization", token.Type()+" "+token.AccessToken)
-	client := &http.Client{Timeout: (20 * time.Second)}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error":  err,
-			"client": client,
-			"resp":   resp,
-		}).Error("Failed to request @me data")
-		http.Error(w, "Failed to retrieve user profile", http.StatusInternalServerError)
-		return
-	}
-
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-			"body":  resp.Body,
-		}).Error("Failed to read data from HTTP response")
-		http.Error(w, "Failed to retrieve user profile", http.StatusInternalServerError)
-		return
-	}
-
-	user := discordgo.User{}
-	err = json.Unmarshal(respBody, &user)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"data":  respBody,
-			"error": err,
-		}).Error("Failed to parse JSON payload from HTTP response")
-		http.Error(w, "Failed to retrieve user profile", http.StatusInternalServerError)
-		return
-	}
-
-	// Finally write some information to the session store
-	session.Values["token"] = token.AccessToken
-	session.Values["username"] = user.Username
-	session.Values["tag"] = user.Discriminator
-	delete(session.Values, "state")
-	session.Save(r, w)
+	// Store the guild id in redis
+	rcli.SAdd("airhorn:guilds:list", r.FormValue("guild_id"))
 
 	// And redirect the user back to the dashboard
 	http.Redirect(w, r, "/?key_to_success=1", http.StatusTemporaryRedirect)
@@ -248,12 +278,18 @@ func handleMe(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
+func handleManage(w http.ResponseWriter, r *http.Request) {
+	//session, _ := store.Get(r, "session")
+}
+
 func server() {
 	server := http.NewServeMux()
 	server.Handle("/", http.FileServer(http.Dir("static/dist")))
 	server.HandleFunc("/me", handleMe)
 	server.HandleFunc("/login", handleLogin)
 	server.HandleFunc("/callback", handleCallback)
+	server.HandleFunc("/managecallback", handleManageCallback)
+	server.HandleFunc("/manage", handleManage)
 
 	// Only add this route if we have stats to push (e.g. redis connection)
 	if es != nil {
@@ -362,12 +398,20 @@ func main() {
 		TokenURL: apiBaseUrl + "/oauth2/token",
 	}
 
-	oauthConf = &oauth2.Config{
+	botOAuthConf = &oauth2.Config{
 		ClientID:     *ClientID,
 		ClientSecret: *ClientSecret,
 		Scopes:       []string{"bot", "identify"},
 		Endpoint:     endpoint,
 		RedirectURL:  "http://airhorn.shywim.fr/callback",
+	}
+
+	manageOAuthConf = &oauth2.Config{
+		ClientID:     *ClientID,
+		ClientSecret: *ClientSecret,
+		Scopes:       []string{"identify", "guilds"},
+		Endpoint:     endpoint,
+		RedirectURL:  "http://airhorn.shywim.fr/managecallback",
 	}
 
 	server()

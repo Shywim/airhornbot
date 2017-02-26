@@ -33,7 +33,9 @@ var (
 	queues = cmap.New()
 
 	// Sound encoding settings
-	BITRATE        = 128
+	BITRATE = 128
+
+	// Max queue size for each Guild
 	MAX_QUEUE_SIZE = 6
 
 	// Owner
