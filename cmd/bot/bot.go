@@ -283,6 +283,17 @@ var PUTEUH = &SoundCollection{
 	},
 }
 
+var UI = &SoundCollection{
+	Prefix: "ui",
+	Commands: []string{
+		"!ui",
+		"!oui",
+	},
+	Sounds: []*Sound{
+		createSound("jday", 1, 0),
+	},
+}
+
 var COLLECTIONS = []*SoundCollection{
 	AIRHORN,
 	KHALED,
@@ -300,6 +311,7 @@ var COLLECTIONS = []*SoundCollection{
 	HANDBAG,
 	WOWBIS,
 	PUTEUH,
+	UI,
 }
 
 // Create a Sound struct
