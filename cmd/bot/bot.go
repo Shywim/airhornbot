@@ -69,6 +69,9 @@ type SoundCollection struct {
 type Sound struct {
 	Name string
 
+	// Link to a gif url
+	Gif string
+
 	// Weight adjust how likely it is this song will play, higher = more likely
 	Weight int
 
@@ -79,27 +82,27 @@ type Sound struct {
 	buffer [][]byte
 }
 
-// Array of all the sounds we have
+// AIRHORN Array of all the sounds we have
 var AIRHORN = &SoundCollection{
 	Prefix: "airhorn",
 	Commands: []string{
 		"!airhorn",
 	},
 	Sounds: []*Sound{
-		createSound("default", 1000, 250),
-		createSound("reverb", 800, 250),
-		createSound("spam", 800, 0),
-		createSound("tripletap", 800, 250),
-		createSound("fourtap", 800, 250),
-		createSound("distant", 500, 250),
-		createSound("echo", 500, 250),
-		createSound("clownfull", 250, 250),
-		createSound("clownshort", 250, 250),
-		createSound("clownspam", 250, 0),
-		createSound("highfartlong", 200, 250),
-		createSound("highfartshort", 200, 250),
-		createSound("midshort", 100, 250),
-		createSound("truck", 10, 250),
+		createSound("default", 1000, 250, ""),
+		createSound("reverb", 800, 250, ""),
+		createSound("spam", 800, 0, ""),
+		createSound("tripletap", 800, 250, ""),
+		createSound("fourtap", 800, 250, ""),
+		createSound("distant", 500, 250, ""),
+		createSound("echo", 500, 250, ""),
+		createSound("clownfull", 250, 250, ""),
+		createSound("clownshort", 250, 250, ""),
+		createSound("clownspam", 250, 0, ""),
+		createSound("highfartlong", 200, 250, ""),
+		createSound("highfartshort", 200, 250, ""),
+		createSound("midshort", 100, 250, ""),
+		createSound("truck", 10, 250, ""),
 	},
 }
 
@@ -111,9 +114,9 @@ var KHALED = &SoundCollection{
 		"!anothaone",
 	},
 	Sounds: []*Sound{
-		createSound("one", 1, 250),
-		createSound("one_classic", 1, 250),
-		createSound("one_echo", 1, 250),
+		createSound("one", 1, 250, ""),
+		createSound("one_classic", 1, 250, ""),
+		createSound("one_echo", 1, 250, ""),
 	},
 }
 
@@ -124,7 +127,7 @@ var CENA = &SoundCollection{
 		"!cena",
 	},
 	Sounds: []*Sound{
-		createSound("realfull", 1, 250),
+		createSound("realfull", 1, 250, ""),
 	},
 }
 
@@ -135,9 +138,9 @@ var COW = &SoundCollection{
 		"!stanislav",
 	},
 	Sounds: []*Sound{
-		createSound("herd", 10, 250),
-		createSound("moo", 10, 250),
-		createSound("x3", 1, 250),
+		createSound("herd", 10, 250, ""),
+		createSound("moo", 10, 250, ""),
+		createSound("x3", 1, 250, ""),
 	},
 }
 
@@ -148,10 +151,10 @@ var BIRTHDAY = &SoundCollection{
 		"!bday",
 	},
 	Sounds: []*Sound{
-		createSound("horn", 50, 250),
-		createSound("horn3", 30, 250),
-		createSound("sadhorn", 25, 250),
-		createSound("weakhorn", 25, 250),
+		createSound("horn", 50, 250, ""),
+		createSound("horn3", 30, 250, ""),
+		createSound("sadhorn", 25, 250, ""),
+		createSound("weakhorn", 25, 250, ""),
 	},
 }
 
@@ -162,7 +165,7 @@ var WOW = &SoundCollection{
 		"!wtc",
 	},
 	Sounds: []*Sound{
-		createSound("thatscool", 50, 250),
+		createSound("thatscool", 50, 250, ""),
 	},
 }
 
@@ -172,7 +175,7 @@ var BLBL = &SoundCollection{
 		"!blbl",
 	},
 	Sounds: []*Sound{
-		createSound("blbl", 1, 250),
+		createSound("blbl", 1, 250, ""),
 	},
 }
 
@@ -182,7 +185,7 @@ var NONO = &SoundCollection{
 		"!nono",
 	},
 	Sounds: []*Sound{
-		createSound("no", 1, 250),
+		createSound("no", 1, 250, "http://cdn.shywim.fr/hornygifs/nono.gif"),
 	},
 }
 
@@ -192,21 +195,21 @@ var KLED = &SoundCollection{
 		"!kled",
 	},
 	Sounds: []*Sound{
-		createSound("attackDismount11", 15, 250),
-		createSound("attackDismount12", 15, 250),
-		createSound("attackMount02", 25, 250),
-		createSound("attackW100", 10, 250),
-		createSound("attackW500", 10, 250),
-		createSound("attackW900", 10, 250),
-		createSound("moveMount53", 20, 250),
-		createSound("moveMount54", 20, 250),
-		createSound("moveMount68", 40, 250),
-		createSound("select", 50, 250),
-		createSound("skaarlFlee02", 25, 250),
-		createSound("skaarlLowHealth04", 25, 250),
-		createSound("spellR5", 20, 250),
-		createSound("start04", 45, 250),
-		createSound("start05", 35, 250),
+		createSound("attackDismount11", 15, 250, ""),
+		createSound("attackDismount12", 15, 250, ""),
+		createSound("attackMount02", 25, 250, ""),
+		createSound("attackW100", 10, 250, ""),
+		createSound("attackW500", 10, 250, ""),
+		createSound("attackW900", 10, 250, ""),
+		createSound("moveMount53", 20, 250, ""),
+		createSound("moveMount54", 20, 250, ""),
+		createSound("moveMount68", 40, 250, ""),
+		createSound("select", 50, 250, ""),
+		createSound("skaarlFlee02", 25, 250, ""),
+		createSound("skaarlLowHealth04", 25, 250, ""),
+		createSound("spellR5", 20, 250, ""),
+		createSound("start04", 45, 250, ""),
+		createSound("start05", 35, 250, ""),
 	},
 }
 
@@ -216,7 +219,7 @@ var HATE = &SoundCollection{
 		"!hate",
 	},
 	Sounds: []*Sound{
-		createSound("attackDismount12", 1, 250),
+		createSound("attackDismount12", 1, 250, ""),
 	},
 }
 
@@ -227,7 +230,7 @@ var DENIS = &SoundCollection{
 		"!ah",
 	},
 	Sounds: []*Sound{
-		createSound("ah", 1, 250),
+		createSound("ah", 1, 250, "http://cdn.shywim.fr/hornygifs/ah.gif"),
 	},
 }
 
@@ -237,7 +240,7 @@ var LEMON = &SoundCollection{
 		"!lemon",
 	},
 	Sounds: []*Sound{
-		createSound("grab", 1, 250),
+		createSound("grab", 1, 250, "http://cdn.shywim.fr/hornygifs/unacceptable.gif"),
 	},
 }
 
@@ -248,7 +251,7 @@ var KUWAH = &SoundCollection{
 		"!quoi",
 	},
 	Sounds: []*Sound{
-		createSound("kuwah", 1, 250),
+		createSound("kuwah", 1, 250, ""),
 	},
 }
 
@@ -258,7 +261,7 @@ var HANDBAG = &SoundCollection{
 		"!handbag",
 	},
 	Sounds: []*Sound{
-		createSound("bag", 1, 250),
+		createSound("bag", 1, 250, ""),
 	},
 }
 
@@ -268,7 +271,7 @@ var WOWBIS = &SoundCollection{
 		"!wow",
 	},
 	Sounds: []*Sound{
-		createSound("wow", 1, 250),
+		createSound("wow", 1, 250, ""),
 	},
 }
 
@@ -279,7 +282,7 @@ var PUTEUH = &SoundCollection{
 		"!puteuh",
 	},
 	Sounds: []*Sound{
-		createSound("pute", 1, 250),
+		createSound("pute", 1, 250, ""),
 	},
 }
 
@@ -290,7 +293,7 @@ var UI = &SoundCollection{
 		"!oui",
 	},
 	Sounds: []*Sound{
-		createSound("jday", 1, 0),
+		createSound("jday", 1, 0, "http://cdn.shywim.fr/hornygifs/ui.gif"),
 	},
 }
 
@@ -315,9 +318,10 @@ var COLLECTIONS = []*SoundCollection{
 }
 
 // Create a Sound struct
-func createSound(Name string, Weight int, PartDelay int) *Sound {
+func createSound(Name string, Weight int, PartDelay int, Gif string) *Sound {
 	return &Sound{
 		Name:      Name,
+		Gif:       Gif,
 		Weight:    Weight,
 		PartDelay: PartDelay,
 		buffer:    make([][]byte, 0),
@@ -482,7 +486,7 @@ func createPlay(user *discordgo.User, guild *discordgo.Guild, coll *SoundCollect
 }
 
 // Prepares and enqueues a play into the ratelimit/buffer guild queue
-func enqueuePlay(user *discordgo.User, guild *discordgo.Guild, coll *SoundCollection, sound *Sound) {
+func enqueuePlay(user *discordgo.User, guild *discordgo.Guild, coll *SoundCollection, sound *Sound, cid string) {
 	play := createPlay(user, guild, coll, sound)
 	if play == nil {
 		return
@@ -498,7 +502,7 @@ func enqueuePlay(user *discordgo.User, guild *discordgo.Guild, coll *SoundCollec
 		}
 	} else {
 		queues.Set(guild.ID, make(chan *Play, MAX_QUEUE_SIZE))
-		playSound(play, nil)
+		playSound(play, nil, cid)
 	}
 }
 
@@ -537,7 +541,7 @@ func trackSoundStats(play *Play) {
 }
 
 // Play a sound
-func playSound(play *Play, vc *discordgo.VoiceConnection) (err error) {
+func playSound(play *Play, vc *discordgo.VoiceConnection, cid string) (err error) {
 	log.WithFields(log.Fields{
 		"play": play,
 	}).Info("Playing sound")
@@ -566,12 +570,17 @@ func playSound(play *Play, vc *discordgo.VoiceConnection) (err error) {
 	// Sleep for a specified amount of time before playing the sound
 	time.Sleep(time.Millisecond * 32)
 
+	// Send gif if present
+	if play.Sound.Gif != "" {
+		discord.ChannelMessageSend(cid, play.Sound.Gif)
+	}
+
 	// Play the sound
 	play.Sound.Play(vc)
 
 	// If this is chained, play the chained sound
 	if play.Next != nil {
-		playSound(play.Next, vc)
+		playSound(play.Next, vc, cid)
 	}
 
 	// If there is another song in the queue, recurse and play that
@@ -581,7 +590,7 @@ func playSound(play *Play, vc *discordgo.VoiceConnection) (err error) {
 		queue := tmp.(chan *Play)
 		if len(queue) > 0 {
 			play := <-queue
-			playSound(play, vc)
+			playSound(play, vc, cid)
 			return nil
 		}
 	}
@@ -847,7 +856,7 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				}
 			}
 
-			go enqueuePlay(m.Author, guild, coll, sound)
+			go enqueuePlay(m.Author, guild, coll, sound, m.ChannelID)
 			return
 		}
 	}
