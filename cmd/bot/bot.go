@@ -33,13 +33,13 @@ var (
 	queues = cmap.New()
 
 	// Sound encoding settings
-	BITRATE = 128
+	bitrate = 128
 
 	// Max queue size for each Guild
-	MAX_QUEUE_SIZE = 6
+	maxQueueSize = 6
 
 	// Owner
-	OWNER string
+	owner string
 )
 
 // Play represents an individual use of the !airhorn command
@@ -497,11 +497,11 @@ func enqueuePlay(user *discordgo.User, guild *discordgo.Guild, coll *SoundCollec
 
 	if exists {
 		queue := tmp.(chan *Play)
-		if len(queue) < MAX_QUEUE_SIZE {
+		if len(queue) < maxQueueSize {
 			queue <- play
 		}
 	} else {
-		queues.Set(guild.ID, make(chan *Play, MAX_QUEUE_SIZE))
+		queues.Set(guild.ID, make(chan *Play, maxQueueSize))
 		playSound(play, nil, cid)
 	}
 }
@@ -830,7 +830,7 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		if mentioned {
 			// Bot control messages come from owner
-			if m.Author.ID == OWNER {
+			if m.Author.ID == owner {
 				handleBotControlMessages(s, m, parts, guild)
 			}
 			handleMentionMessages(s, m, parts, guild)
@@ -874,7 +874,7 @@ func main() {
 	flag.Parse()
 
 	if *Owner != "" {
-		OWNER = *Owner
+		owner = *Owner
 	}
 
 	// Preload all the sounds
