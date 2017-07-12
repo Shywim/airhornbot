@@ -2,6 +2,7 @@
   const video: HTMLVideoElement = <HTMLVideoElement>document.getElementById('video')
   const audio: HTMLAudioElement = <HTMLAudioElement>document.getElementById('audio')
   const count: HTMLElement = document.getElementById('count')
+  const playsCount: HTMLElement = document.getElementById('plays-count')
   const usersCount: HTMLElement = document.getElementById('users-count')
   const guildsCount: HTMLElement = document.getElementById('guilds-count')
   const channelsCount: HTMLElement = document.getElementById('channels-count')
@@ -35,6 +36,7 @@
       stats.channels = data.unique_channels || 0
 
       count.innerText = stats.count.toString()
+      playsCount.innerText = stats.count.toString()
       usersCount.innerText = stats.users.toString()
       guildsCount.innerText = stats.guilds.toString()
       channelsCount.innerText = stats.channels.toString()
