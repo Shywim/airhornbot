@@ -1,7 +1,7 @@
 BOT_BINARY=bot
 WEB_BINARY=web
 
-JS_FILES = $(shell find static/src/ -type f -name '*.js')
+JS_FILES = $(shell find static/src/ -type f -name '*.ts')
 
 .PHONY: all
 all: bot web
@@ -9,18 +9,15 @@ all: bot web
 bot: cmd/bot/bot.go
 	go build -o ${BOT_BINARY} cmd/bot/bot.go
 
-web: cmd/webserver/web.go static
+web: cmd/webserver/web.go tsbuild
 	go build -o ${WEB_BINARY} cmd/webserver/web.go
 
-npm: static/package.json
-	cd static && npm install .
+npm: web-app/package.json
+	cd web-app && npm install .
 
-gulp: $(JS_FILES)
-	cd static && ./node_modules/.bin/gulp dist
-
-.PHONY: static
-static: npm gulp
+tsbuild: $(JS_FILES) npm
+	cd web-app && npm build
 
 .PHONY: clean
 clean:
-	rm -r ${BOT_BINARY} ${WEB_BINARY} static/dist/
+	rm -r ${BOT_BINARY} ${WEB_BINARY} web-app/public/js

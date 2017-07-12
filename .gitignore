@@ -8,3 +8,5 @@ requests.log
 dist
 node_modules
 .idea/
+static/public/
+.vscode/

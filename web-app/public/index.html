@@ -1,0 +1,101 @@
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>!airhorn</title>
+
+  <link rel="stylesheet" href="css/main.css">
+</head>
+
+<body>
+  <div class="container">
+    <div class="content">
+      <div class="heading">
+        <h1 class="title">!airhorn</h1>
+        <p class="message">The only bot for Discord you'll ever need</p>
+      </div>
+
+      <video id="video" class="video-airhorn" preload="true">
+        <source src="assets/final_island_full.mp4" type="video/mp4">
+        <source src="assets/final_island_full.ogv" type="video/ogg; codecs=theora, vorbis">
+        <source src="assets/final_island_full.webm" type="video/webm; codecs=vp8, vorbis">
+        <audio id="audio" preload="true" src="assets/airhorn.wav" type="audio/wav"></audio>
+      </video>
+
+      <a class="add-btn" href="/login">Add to Discord</a>
+      <a class="add-btn" href="/manage" disabled>Manage my Airhorn</a>
+    </div>
+
+    <div id="stats-panel" class="stats-panel crossfade one-reverse">
+      <div class="stats-row">
+        <img src="assets/icon-plays.svg">
+        <div class="label-value">
+          <div id="plays-count" class="value">0</div>
+          <div class="label">Plays</div>
+        </div>
+      </div>
+      <div class="stats-row">
+        <img src="assets/icon-users.svg">
+        <div class="label-value">
+          <div id="users-count" class="value">0</div>
+          <div class="label">Unique Users</div>
+        </div>
+      </div>
+      <div class="stats-row">
+        <img src="assets/icon-servers.svg">
+        <div class="label-value">
+          <div id="servers-count" class="value">0</div>
+          <div class="label">Unique Servers</div>
+        </div>
+      </div>
+      <div class="stats-row">
+        <img src="assets/icon-channels.svg">
+        <div class="label-value">
+          <div id="channels-count" class="value">0</div>
+          <div class="label">Unique channels</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="airhorn-count">
+        <div id="stats-toggler" class="stats-toggler">
+          <div class="airhorn-count-content">
+            <img src="assets/airhorn-counter.svg">
+            <div class="count-text">
+              <div class="count" id="count">0</div>
+              <div class="and-counting">and counting</div>
+            </div>
+          </div>
+          <div class="stats-btn">
+            <img id="stats-panel-close" class="crossfade three-reverse" src="assets/icon-close.svg">
+            <img id="stats-panel-open" class="crossfade two-reverse" src="assets/icon-about.svg" tip="Click for more stats" currentitem="false">
+          </div>
+        </div>
+      </div>
+
+      <div class="main-text">
+        <span class="normal-text">
+        <span>Open sourced by the team at</span>
+        <a href="https://discordapp.com">Discord</a>
+        <span>. Tinkered with <span class="love">love</span> by Shywim.</span>
+        <br>
+        <span>Contribute yourself on</span>
+        <a href="https://github.com/shywim/airhornbot">Github ➔</a>
+        </span>
+      </div>
+
+      <div class="social">
+        <a><img src="assets/icon-facebook.svg"></a>
+        <a><img src="assets/icon-twitter.svg"></a>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script type="text/javascript" src="js/main.js"></script>
+
+</body>
+
+</html>

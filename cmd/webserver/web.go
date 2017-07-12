@@ -43,9 +43,6 @@ var (
 	// Used for pushing live stat updates to the client
 	es eventsource.EventSource
 
-	// Source of the HTML page (cached in memory for performance)
-	htmlIndexPage string
-
 	// Base URL of the discord API
 	apiBaseUrl = "https://discordapp.com/api"
 )
@@ -284,7 +281,7 @@ func handleManage(w http.ResponseWriter, r *http.Request) {
 
 func server() {
 	server := http.NewServeMux()
-	server.Handle("/", http.FileServer(http.Dir("static/dist")))
+	server.Handle("/", http.FileServer(http.Dir("web-app/public")))
 	server.HandleFunc("/me", handleMe)
 	server.HandleFunc("/login", handleLogin)
 	server.HandleFunc("/callback", handleCallback)
@@ -363,7 +360,6 @@ func main() {
 		ClientID     = flag.String("i", "", "OAuth2 Client ID")
 		ClientSecret = flag.String("s", "", "OAtuh2 Client Secret")
 		Redis        = flag.String("r", "", "Redis Connection String")
-		err          error
 	)
 	flag.Parse()
 
@@ -385,16 +381,6 @@ func main() {
 		defer es.Close()
 		go broadcastLoop()
 	}
-
-	// Load the HTML static page
-	data, err := ioutil.ReadFile("templates/index.html")
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Error("Failed to open index.html")
-		return
-	}
-	htmlIndexPage = string(data)
 
 	// Create a cookie store
 	store = sessions.NewCookieStore([]byte(*ClientSecret))
