@@ -26,10 +26,19 @@
   }
 
   // bot stats 
+  const removeCountBig = function(){
+    count.classList.remove('count-big')
+  }
   if (EventSource != null) {
     const es: EventSource = new EventSource('/events')
     es.onmessage = function (msg) {
       const data = JSON.parse(msg.data)
+      
+      if (stats.count !== data.total){
+        count.classList.add('count-big')
+        setTimeout(removeCountBig, 400)
+      }
+
       stats.count = data.total || 0
       stats.users = data.unique_users || 0
       stats.guilds = data.unique_guilds || 0
