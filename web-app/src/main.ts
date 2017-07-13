@@ -28,6 +28,9 @@
   }
 
   // video handler
+  video.addEventListener('ended', function(){
+    video.currentTime = 0
+  }, false)
   video.onclick = function () {
     video.play()
     audio.play()
