@@ -125,18 +125,18 @@ html, body {
 	margin-bottom: 5px;
 }
 
-.stats-panel .stats-row .label-value {
+.stats-row .label-value {
 	margin-left: 8px;
 }
 
-.stats-panel .stats-row .label-value .value {
+.stats-row .label-value .value {
 	font-weight: 700;
 	font-size: 14px;
 	line-height: 19px;
 	color: rgb(94, 70, 52);
 }
 
-.stats-panel .stats-row .label-value .label {
+.stats-row .label-value .label {
 	font-weight: 700;
 	font-size: 10px;
 	line-height: 12px;
@@ -144,7 +144,7 @@ html, body {
 	text-transform: uppercase;
 }
 
-.footer .airhorn-count .stats-toggler .airhorn-count-content {
+.airhorn-count .stats-toggler .airhorn-count-content {
 	align-items: center;
 	display: flex;
 	font-size: 12px;
@@ -153,22 +153,22 @@ html, body {
 	width: 170px;
 }
 
-.footer .airhorn-count .stats-toggler .airhorn-count-content .count-text {
+.airhorn-count-content .count-text {
 	margin-left: 10px;
 }
 
-.footer .airhorn-count .stats-toggler .airhorn-count-content .count-text .count {
+.airhorn-count-content .count-text .count {
 	display: flex;
 	justify-content: center;
 	color: rgb(102, 102, 102);
 	transition: all 0.2s ease 0s;
 }
 
-.footer .airhorn-count .stats-toggler .airhorn-count-content .count-text .count.count-big {
+.airhorn-count-content .count-text .count.count-big {
   font-size: 18px;
 }
 
-.footer .airhorn-count .stats-toggler .airhorn-count-content .count-text .and-counting {
+.airhorn-count-content .count-text .and-counting {
 	color: rgb(204, 204, 204);
 }
 
@@ -184,31 +184,6 @@ html, body {
 	animation-fill-mode: forwards;
 }
 
-.crossfade.one {
-	animation-duration: 0.2s;
-	animation-name: crossfade-one;
-}
-
-.crossfade.one-reverse {
-	animation-duration: 0.2s;
-	animation-name: crossfade-one-reverse;
-}
-
-.crossfade.two {
-  animation-name: crossfade-two;
-}
-
-.crossfade.two-reverse {
-  animation-name: crossfade-two-reverse;
-}
-
-.crossfade.three {
-  animation-name: crossfade-three;
-}
-
-.crossfade.three-reverse {
-  animation-name: crossfade-three-reverse;
-}
 
 .footer .airhorn-count .stats-toggler .stats-btn img:nth-child(0n+2) {
 	position: relative;
@@ -254,6 +229,7 @@ html, body {
   }
 }
 
+/* ANIMATIONS */
 @keyframes crossfade-one-reverse {
   from {
     transform: translate3d(0px, 0px, 0px);
@@ -306,3 +282,29 @@ html, body {
   }
 }
 
+.crossfade.one {
+	animation-duration: 0.2s;
+	animation-name: crossfade-one;
+}
+
+.crossfade.one-reverse {
+	animation-duration: 0.2s;
+	animation-name: crossfade-one-reverse;
+}
+
+.crossfade.two {
+  animation-name: crossfade-two;
+}
+
+.crossfade.two-reverse {
+  animation-name: crossfade-two-reverse;
+}
+
+.crossfade.three {
+  animation-name: crossfade-three;
+}
+
+.crossfade.three-reverse {
+  animation-name: crossfade-three-reverse;
+}
+/***/
