@@ -17,16 +17,20 @@ html, body {
 .container {
   position: relative;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   width: 100%;
   height: 100%;
+  overflow-y: auto;
 }
 
 .content {
-	margin-top: -80px;
+  margin-top: 100px;
+  margin-bottom: 60px;
 	z-index: 1;
 	display: flex;
+  flex: 1 0 auto;
 	flex-flow: column nowrap;
 	align-items: center;
 	transition: margin-top 0.5s ease 0s;
@@ -86,10 +90,12 @@ html, body {
 
 .footer {
   display: flex;
-	position: fixed;
-	bottom: 0px;
-	left: 0px;
-	right: 0px;
+  width: 100%;
+}
+
+.footer-content {
+  display: flex;
+  width: 100%;
 	justify-content: space-between;
 	background-color: rgb(255, 255, 255);
 	opacity: 0.98;
@@ -109,9 +115,7 @@ html, body {
 }
 
 .stats-panel {
-	position: fixed;
-	left: 20px;
-  bottom: 92px;
+	position: absolute;
 	padding: 10px 75px 10px 8px;
 	background: rgb(255, 255, 255) none repeat scroll 0% 0%;
 	opacity: 0.98;
@@ -173,22 +177,16 @@ html, body {
 }
 
 .footer .airhorn-count .stats-toggler .stats-btn {
-	align-self: center;
-	margin-left: 28px;
 	z-index: 3;
 }
 
-.crossfade {
-	animation-duration: 0.4s;
-	animation-timing-function: cubic-bezier(0.5, -0.25, 0.3, 1.25);
-	animation-fill-mode: forwards;
+.stats-btn img:first-child {
+	position: absolute;
 }
 
-
-.footer .airhorn-count .stats-toggler .stats-btn img:nth-child(0n+2) {
-	position: relative;
-	left: -34px;
-	top: 1px;
+.stats-btn img:nth-child(2) {
+  margin-left: 1px;
+  margin-top: 1px;
 }
 
 .footer .main-text, .footer .main-text a {
@@ -219,17 +217,17 @@ html, body {
 }
 
 @media(max-width: 1060px){
-  .footer {
+  .video-airhorn {
+    height: 160px;
+  }
+
+  .footer-content {
     flex-direction: column;
     align-items: center;
   }
 
   .footer .airhorn-count {
     margin-bottom: 28px;
-  }
-
-  .airhorn-count .stats-toggler .stats-btn {
-    margin-left: 60px;
   }
 
   .stats-panel {
@@ -259,22 +257,22 @@ html, body {
 /* ANIMATIONS */
 @keyframes crossfade-one {
   from {
-    transform: translate3d(0px, 255px, 0px);
+    transform: scaleY(0) translate3d(0px, 0px, 0px);
     visibility: hidden;
   }
   to {
-    transform: translate3d(0px, 0px, 0px);
+    transform: scaleY(1) translate3d(0px, -100%, 0px);
     visibility: visible;
   }
 }
 
 @keyframes crossfade-one-reverse {
   from {
-    transform: translate3d(0px, 0px, 0px);
+    transform: scaleY(1) translate3d(0px, -100%, 0px);
     visibility: visible;
   }
   to {
-    transform: translate3d(0px, 255px, 0px);
+    transform: scaleY(0) translate3d(0px, 0px, 0px);
     visibility: hidden;
   }
 }
@@ -318,6 +316,12 @@ html, body {
   to {
     transform: translate3d(0px, 0px, 0px);
   }
+}
+
+.crossfade {
+	animation-duration: 0.4s;
+	animation-timing-function: cubic-bezier(0.5, -0.25, 0.3, 1.25);
+	animation-fill-mode: forwards;
 }
 
 .crossfade.one {
