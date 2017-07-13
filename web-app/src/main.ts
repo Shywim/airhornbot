@@ -1,4 +1,10 @@
 (function () {
+  const AIRHORN_URL = 'https://airhorn.shywim.fr'
+  const MESSAGE_TWITTER = 'This Discord bot makes airhorn sounds ayy lmao'
+  const HASHTAGS_TWITTER = 'ReadyForHorning'
+  const FB_SHARE_URL = `http://www.facebook.com/sharer.php?u=${AIRHORN_URL}`
+  const TWITTER_SHARE_URL = `https://twitter.com/share?text=${MESSAGE_TWITTER}&url=${AIRHORN_URL}&hashtags=${HASHTAGS_TWITTER}`
+
   const video: HTMLVideoElement = <HTMLVideoElement>document.getElementById('video')
   const audio: HTMLAudioElement = <HTMLAudioElement>document.getElementById('audio')
   const count: HTMLElement = document.getElementById('count')
@@ -10,6 +16,8 @@
   const statsPanel: HTMLElement = document.getElementById('stats-panel')
   const statsPanelClose: HTMLElement = document.getElementById('stats-panel-close')
   const statsPanelOpen: HTMLElement = document.getElementById('stats-panel-open')
+  const shareFb: HTMLElement = document.getElementById('share-fb')
+  const shareTwitter: HTMLElement = document.getElementById('share-twitter')
 
   let statsTogglerState = false
   const stats = {
@@ -33,7 +41,7 @@
     const es: EventSource = new EventSource('/events')
     es.onmessage = function (msg) {
       const data = JSON.parse(msg.data)
-      
+
       if (stats.count !== data.total){
         count.classList.add('count-big')
         setTimeout(removeCountBig, 400)
@@ -72,6 +80,14 @@
     statsPanel.classList.add(`one${add}`)
   }
 
+  // social share
+  const openShare = function(url){
+    window.open(url, '', 'height=500, width=500')
+  }
+  shareFb.onclick = () => openShare(FB_SHARE_URL)
+  shareTwitter.onclick = () => openShare(TWITTER_SHARE_URL)
+
+  // play video if just logged in
   if (URLSearchParams != null) {
     const params = new URLSearchParams(location.search.slice(1))
     const keyToSuccess = params.get('key_to_success')
