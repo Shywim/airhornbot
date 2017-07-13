@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 ### Added 
  - **bot** Can now send gifs along playing sounds
  - **bot** New help command (using `@Airhorn help`)
+ - **web-app** Stats now displayed on mobile
  
 ### Changed
  - **web-app** Ditched React and the bloat coming with it and rewrote the front page in simple TypeScript
