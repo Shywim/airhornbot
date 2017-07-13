@@ -157,6 +157,10 @@ html, body {
 	transition: all 0.2s ease 0s;
 }
 
+.footer .airhorn-count .stats-toggler .airhorn-count-content .count-text .count.count-big {
+  font-size: 18px;
+}
+
 .footer .airhorn-count .stats-toggler .airhorn-count-content .count-text .and-counting {
 	color: rgb(204, 204, 204);
 }
