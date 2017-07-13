@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 ### Added 
  - **bot** Can now send gifs along playing sounds
- - **bot** New help command
+ - **bot** New help command (using `@Airhorn help`)
  
 ### Changed
  - **web-app** Ditched React and the bloat coming with it and rewrote the front page in simple TypeScript
@@ -22,10 +22,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
  - **build** Removed Gulp
  
 ### Fixed
- - **bot** Fix for discordgo change on `GuildCreate.Guild.Unavaible`
- - **bot** Fix for discord api auth change (prepend `Bot ` to token)
+ - **bot** Fix for discordgo change on `GuildCreate.Guild.Unavaible` [hammerandchisel/airhornbot][origin35]
+ - **bot** Fix for discord api auth change [hammerandchisel/discord-api-docs#119][dad119]
  - **bot** Fixed play queue that was not thread safe
  - **bot** Fixed EventSource for nginx
 
  [Unreleased]: https://github.com/hammerandchisel/airhornbot/compare/master...Shywim:master
- 
+
+ [dad119]: https://github.com/hammerandchisel/discord-api-docs/issues/119
+ [origin35]: https://github.com/hammerandchisel/airhornbot/issues/35
