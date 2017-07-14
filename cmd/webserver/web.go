@@ -23,10 +23,11 @@ import (
 
 var (
 	// Permission Constants
-	READ_MESSAGES = 1024
-	SEND_MESSAGES = 2048
-	CONNECT       = 1048576
-	SPEAK         = 2097152
+	permAdministrator = 8
+	permReadMessages  = 1024
+	permSendMessages  = 2048
+	permConnect       = 1048576
+	permSpeak         = 2097152
 
 	// Redis client (for stats)
 	rcli *redis.Client
@@ -218,7 +219,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	session.Save(r, w)
 
 	// OR the permissions we want
-	perms := READ_MESSAGES | SEND_MESSAGES | CONNECT | SPEAK
+	perms := permReadMessages | permSendMessages | permConnect | permSpeak
 
 	// Return a redirect to the ouath provider
 	url := botOAuthConf.AuthCodeURL(session.Values["state"].(string), oauth2.AccessTypeOnline)
@@ -276,7 +277,35 @@ func handleMe(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleManage(w http.ResponseWriter, r *http.Request) {
-	//session, _ := store.Get(r, "session")
+	session, _ := store.Get(r, "session")
+
+	token := session.Values["token"]
+
+	discord, err := discordgo.New(fmt.Sprintf("Bearer %v", token))
+	if err != nil {
+		fmt.Println("Ah")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	guilds, err := discord.UserGuilds(100, "", "")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var adminGuilds []*discordgo.UserGuild
+	for _, guild := range guilds {
+		if guild.Permissions&permAdministrator != 0 {
+			adminGuilds = append(adminGuilds, guild)
+		}
+	}
+
+	body, err := json.Marshal(map[string]interface{}{
+		"guilds": adminGuilds,
+	})
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(body)
 }
 
 func server() {
@@ -394,7 +423,7 @@ func main() {
 	botOAuthConf = &oauth2.Config{
 		ClientID:     *ClientID,
 		ClientSecret: *ClientSecret,
-		Scopes:       []string{"bot", "identify"},
+		Scopes:       []string{"bot", "identify", "guilds"},
 		Endpoint:     endpoint,
 		RedirectURL:  "http://airhorn.shywim.fr/callback",
 	}
