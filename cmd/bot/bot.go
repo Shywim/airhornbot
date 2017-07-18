@@ -2,13 +2,14 @@ package main
 
 import (
 	"bytes"
-	"encoding/binary"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"math/rand"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -18,8 +19,10 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/bwmarrin/discordgo"
 	"github.com/dustin/go-humanize"
+	"github.com/garyburd/redigo/redis"
+	"github.com/jonas747/dca"
 	"github.com/orcaman/concurrent-map"
-	redis "gopkg.in/redis.v3"
+	"github.com/shywim/airhornbot/common"
 )
 
 var (
@@ -27,7 +30,7 @@ var (
 	discord *discordgo.Session
 
 	// Redis client connection (used for stats)
-	rcli *redis.Client
+	redisPool *redis.Pool
 
 	// Map of Guild id's to *Play channels, used for queuing and rate-limiting guilds
 	queues = cmap.New()
@@ -36,10 +39,12 @@ var (
 	bitrate = 128
 
 	// Max queue size for each Guild
-	maxQueueSize = 6
+	maxQueueSize = 5
 
 	// Owner
 	owner string
+
+	userAudioPath *string
 )
 
 // Play represents an individual use of the !airhorn command
@@ -47,7 +52,7 @@ type Play struct {
 	GuildID   string
 	ChannelID string
 	UserID    string
-	Sound     *Sound
+	Sound     *common.Sound
 
 	// The next play to occur after this, only used for chaining sounds like anotha
 	Next *Play
@@ -56,292 +61,26 @@ type Play struct {
 	Forced bool
 }
 
-type SoundCollection struct {
-	Prefix    string
-	Commands  []string
-	Sounds    []*Sound
-	ChainWith *SoundCollection
-
-	soundRange int
-}
-
-// Sound represents a sound clip
-type Sound struct {
-	Name string
-
-	// Link to a gif url
-	Gif string
-
-	// Weight adjust how likely it is this song will play, higher = more likely
-	Weight int
-
-	// Delay (in milliseconds) for the bot to wait before sending the disconnect request
-	PartDelay int
-
-	// Buffer to store encoded PCM packets
-	buffer [][]byte
-}
-
-// AIRHORN Array of all the sounds we have
-var AIRHORN = &SoundCollection{
-	Prefix: "airhorn",
-	Commands: []string{
-		"!airhorn",
-	},
-	Sounds: []*Sound{
-		createSound("default", 1000, 250, ""),
-		createSound("reverb", 800, 250, ""),
-		createSound("spam", 800, 0, ""),
-		createSound("tripletap", 800, 250, ""),
-		createSound("fourtap", 800, 250, ""),
-		createSound("distant", 500, 250, ""),
-		createSound("echo", 500, 250, ""),
-		createSound("clownfull", 250, 250, ""),
-		createSound("clownshort", 250, 250, ""),
-		createSound("clownspam", 250, 0, ""),
-		createSound("highfartlong", 200, 250, ""),
-		createSound("highfartshort", 200, 250, ""),
-		createSound("midshort", 100, 250, ""),
-		createSound("truck", 10, 250, ""),
-	},
-}
-
-var KHALED = &SoundCollection{
-	Prefix:    "another",
-	ChainWith: AIRHORN,
-	Commands: []string{
-		"!anotha",
-		"!anothaone",
-	},
-	Sounds: []*Sound{
-		createSound("one", 1, 250, ""),
-		createSound("one_classic", 1, 250, ""),
-		createSound("one_echo", 1, 250, ""),
-	},
-}
-
-var CENA = &SoundCollection{
-	Prefix: "jc",
-	Commands: []string{
-		"!johncena",
-		"!cena",
-	},
-	Sounds: []*Sound{
-		createSound("realfull", 1, 250, ""),
-	},
-}
-
-var COW = &SoundCollection{
-	Prefix: "cow",
-	Commands: []string{
-		"!stan",
-		"!stanislav",
-	},
-	Sounds: []*Sound{
-		createSound("herd", 10, 250, ""),
-		createSound("moo", 10, 250, ""),
-		createSound("x3", 1, 250, ""),
-	},
-}
-
-var BIRTHDAY = &SoundCollection{
-	Prefix: "birthday",
-	Commands: []string{
-		"!birthday",
-		"!bday",
-	},
-	Sounds: []*Sound{
-		createSound("horn", 50, 250, ""),
-		createSound("horn3", 30, 250, ""),
-		createSound("sadhorn", 25, 250, ""),
-		createSound("weakhorn", 25, 250, ""),
-	},
-}
-
-var WOW = &SoundCollection{
-	Prefix: "wow",
-	Commands: []string{
-		"!wowthatscool",
-		"!wtc",
-	},
-	Sounds: []*Sound{
-		createSound("thatscool", 50, 250, ""),
-	},
-}
-
-var BLBL = &SoundCollection{
-	Prefix: "bl",
-	Commands: []string{
-		"!blbl",
-	},
-	Sounds: []*Sound{
-		createSound("blbl", 1, 250, ""),
-	},
-}
-
-var NONO = &SoundCollection{
-	Prefix: "nono",
-	Commands: []string{
-		"!nono",
-	},
-	Sounds: []*Sound{
-		createSound("no", 1, 250, "http://cdn.shywim.fr/hornygifs/nono.gif"),
-	},
-}
-
-var KLED = &SoundCollection{
-	Prefix: "kled",
-	Commands: []string{
-		"!kled",
-	},
-	Sounds: []*Sound{
-		createSound("attackDismount11", 15, 250, ""),
-		createSound("attackDismount12", 15, 250, ""),
-		createSound("attackMount02", 25, 250, ""),
-		createSound("attackW100", 10, 250, ""),
-		createSound("attackW500", 10, 250, ""),
-		createSound("attackW900", 10, 250, ""),
-		createSound("moveMount53", 20, 250, ""),
-		createSound("moveMount54", 20, 250, ""),
-		createSound("moveMount68", 40, 250, ""),
-		createSound("select", 50, 250, ""),
-		createSound("skaarlFlee02", 25, 250, ""),
-		createSound("skaarlLowHealth04", 25, 250, ""),
-		createSound("spellR5", 20, 250, ""),
-		createSound("start04", 45, 250, ""),
-		createSound("start05", 35, 250, ""),
-	},
-}
-
-var HATE = &SoundCollection{
-	Prefix: "kled",
-	Commands: []string{
-		"!hate",
-	},
-	Sounds: []*Sound{
-		createSound("attackDismount12", 1, 250, ""),
-	},
-}
-
-var DENIS = &SoundCollection{
-	Prefix: "denis",
-	Commands: []string{
-		"!denis",
-		"!ah",
-	},
-	Sounds: []*Sound{
-		createSound("ah", 1, 250, "http://cdn.shywim.fr/hornygifs/ah.gif"),
-	},
-}
-
-var LEMON = &SoundCollection{
-	Prefix: "lemon",
-	Commands: []string{
-		"!lemon",
-	},
-	Sounds: []*Sound{
-		createSound("grab", 1, 250, "http://cdn.shywim.fr/hornygifs/unacceptable.gif"),
-	},
-}
-
-var KUWAH = &SoundCollection{
-	Prefix: "brenda",
-	Commands: []string{
-		"!kuwah",
-		"!quoi",
-	},
-	Sounds: []*Sound{
-		createSound("kuwah", 1, 250, ""),
-	},
-}
-
-var HANDBAG = &SoundCollection{
-	Prefix: "hand",
-	Commands: []string{
-		"!handbag",
-	},
-	Sounds: []*Sound{
-		createSound("bag", 1, 250, ""),
-	},
-}
-
-var WOWBIS = &SoundCollection{
-	Prefix: "wow",
-	Commands: []string{
-		"!wow",
-	},
-	Sounds: []*Sound{
-		createSound("wow", 1, 250, ""),
-	},
-}
-
-var PUTEUH = &SoundCollection{
-	Prefix: "puteuh",
-	Commands: []string{
-		"!pute",
-		"!puteuh",
-	},
-	Sounds: []*Sound{
-		createSound("pute", 1, 250, ""),
-	},
-}
-
-var UI = &SoundCollection{
-	Prefix: "ui",
-	Commands: []string{
-		"!ui",
-		"!oui",
-	},
-	Sounds: []*Sound{
-		createSound("jday", 1, 0, "http://cdn.shywim.fr/hornygifs/ui.gif"),
-	},
-}
-
-var COLLECTIONS = []*SoundCollection{
-	AIRHORN,
-	KHALED,
-	CENA,
-	COW,
-	BIRTHDAY,
-	WOW,
-	BLBL,
-	NONO,
-	KLED,
-	HATE,
-	DENIS,
-	LEMON,
-	KUWAH,
-	HANDBAG,
-	WOWBIS,
-	PUTEUH,
-	UI,
-}
-
 // Create a Sound struct
-func createSound(Name string, Weight int, PartDelay int, Gif string) *Sound {
-	return &Sound{
-		Name:      Name,
-		Gif:       Gif,
-		Weight:    Weight,
-		PartDelay: PartDelay,
-		buffer:    make([][]byte, 0),
+func createSound(Name string, Weight int, Gif string) *common.Sound {
+	return &common.Sound{
+		Name:   Name,
+		Gif:    Gif,
+		Weight: Weight,
 	}
 }
 
-func (sc *SoundCollection) Load() {
-	for _, sound := range sc.Sounds {
-		sc.soundRange += sound.Weight
-		sound.Load(sc)
-	}
-}
-
-func (s *SoundCollection) Random() *Sound {
+func random(s []*common.Sound) *common.Sound {
 	var (
-		i      int
-		number int = randomRange(0, s.soundRange)
+		i     int
+		total int
 	)
 
-	for _, sound := range s.Sounds {
+	for _, sound := range s {
+		total += sound.Weight
+	}
+	number := randomRange(0, total)
+	for _, sound := range s {
 		i += sound.Weight
 
 		if number < i {
@@ -349,62 +88,6 @@ func (s *SoundCollection) Random() *Sound {
 		}
 	}
 	return nil
-}
-
-// Load attempts to load an encoded sound file from disk
-// DCA files are pre-computed sound files that are easy to send to Discord.
-// If you would like to create your own DCA files, please use:
-// https://github.com/nstafie/dca-rs
-// eg: dca-rs --raw -i <input wav file> > <output file>
-func (s *Sound) Load(c *SoundCollection) error {
-	path := fmt.Sprintf("audio/%v_%v.dca", c.Prefix, s.Name)
-
-	file, err := os.Open(path)
-
-	if err != nil {
-		fmt.Println("error opening dca file :", err)
-		return err
-	}
-
-	var opuslen int16
-
-	for {
-		// read opus frame length from dca file
-		err = binary.Read(file, binary.LittleEndian, &opuslen)
-
-		// If this is the end of the file, just return
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			return nil
-		}
-
-		if err != nil {
-			fmt.Println("error reading from dca file :", err)
-			return err
-		}
-
-		// read encoded pcm from dca file
-		InBuf := make([]byte, opuslen)
-		err = binary.Read(file, binary.LittleEndian, &InBuf)
-
-		// Should not be any end of file errors
-		if err != nil {
-			fmt.Println("error reading from dca file :", err)
-			return err
-		}
-
-		// append encoded pcm data to the buffer
-		s.buffer = append(s.buffer, InBuf)
-	}
-}
-
-// Plays this sound over the specified VoiceConnection
-func (s *Sound) Play(vc *discordgo.VoiceConnection) {
-	vc.Speaking(true)
-	defer vc.Speaking(false)
-
-	for _, buff := range s.buffer {
-		vc.OpusSend <- buff
-	}
 }
 
 // Attempt to join a voice channel
@@ -444,8 +127,40 @@ func randomRange(min, max int) int {
 	return rand.Intn(max-min) + min
 }
 
+func loadSound(s *common.Sound) (buffer [][]byte, err error) {
+	file, err := os.Open(s.FilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	decoder := dca.NewDecoder(file)
+
+	for {
+		frame, err := decoder.OpusFrame()
+		if err != nil {
+			if err == io.EOF || err == io.ErrUnexpectedEOF {
+				return buffer, nil
+			}
+
+			fmt.Println("error reading from dca file :", err)
+			return nil, err
+		}
+
+		buffer = append(buffer, frame)
+	}
+}
+
+func doPlay(soundData [][]byte, vc *discordgo.VoiceConnection) {
+	vc.Speaking(true)
+	defer vc.Speaking(false)
+
+	for _, buff := range soundData {
+		vc.OpusSend <- buff
+	}
+}
+
 // Prepares a play
-func createPlay(user *discordgo.User, guild *discordgo.Guild, coll *SoundCollection, sound *Sound) *Play {
+func createPlay(user *discordgo.User, guild *discordgo.Guild, coll []*common.Sound) *Play {
 	// Grab the users voice channel
 	channel := getCurrentVoiceChannel(user, guild)
 	if channel == nil {
@@ -461,33 +176,17 @@ func createPlay(user *discordgo.User, guild *discordgo.Guild, coll *SoundCollect
 		GuildID:   guild.ID,
 		ChannelID: channel.ID,
 		UserID:    user.ID,
-		Sound:     sound,
-		Forced:    true,
 	}
 
 	// If we didn't get passed a manual sound, generate a random one
-	if play.Sound == nil {
-		play.Sound = coll.Random()
-		play.Forced = false
-	}
-
-	// If the collection is a chained one, set the next sound
-	if coll.ChainWith != nil {
-		play.Next = &Play{
-			GuildID:   play.GuildID,
-			ChannelID: play.ChannelID,
-			UserID:    play.UserID,
-			Sound:     coll.ChainWith.Random(),
-			Forced:    play.Forced,
-		}
-	}
+	play.Sound = random(coll)
 
 	return play
 }
 
 // Prepares and enqueues a play into the ratelimit/buffer guild queue
-func enqueuePlay(user *discordgo.User, guild *discordgo.Guild, coll *SoundCollection, sound *Sound, cid string) {
-	play := createPlay(user, guild, coll, sound)
+func enqueuePlay(user *discordgo.User, guild *discordgo.Guild, sounds []*common.Sound, cid string) {
+	play := createPlay(user, guild, sounds)
 	if play == nil {
 		return
 	}
@@ -507,32 +206,26 @@ func enqueuePlay(user *discordgo.User, guild *discordgo.Guild, coll *SoundCollec
 }
 
 func trackSoundStats(play *Play) {
-	if rcli == nil {
+	if redisPool == nil {
 		return
 	}
 
-	_, err := rcli.Pipelined(func(pipe *redis.Pipeline) error {
-		var baseChar string
+	conn := redisPool.Get()
+	defer conn.Close()
 
-		if play.Forced {
-			baseChar = "f"
-		} else {
-			baseChar = "a"
-		}
+	redisSoundID := play.Sound.ID
+	// use sound name for stats only if this is a default sound (no ID)
+	if redisSoundID == "" {
+		redisSoundID = play.Sound.Name
+	}
 
-		base := fmt.Sprintf("airhorn:%s", baseChar)
-		pipe.Incr("airhorn:total")
-		pipe.Incr(fmt.Sprintf("%s:total", base))
-		pipe.Incr(fmt.Sprintf("%s:sound:%s", base, play.Sound.Name))
-		pipe.Incr(fmt.Sprintf("%s:user:%s:sound:%s", base, play.UserID, play.Sound.Name))
-		pipe.Incr(fmt.Sprintf("%s:guild:%s:sound:%s", base, play.GuildID, play.Sound.Name))
-		pipe.Incr(fmt.Sprintf("%s:guild:%s:chan:%s:sound:%s", base, play.GuildID, play.ChannelID, play.Sound.Name))
-		pipe.SAdd(fmt.Sprintf("%s:users", base), play.UserID)
-		pipe.SAdd(fmt.Sprintf("%s:guilds", base), play.GuildID)
-		pipe.SAdd(fmt.Sprintf("%s:channels", base), play.ChannelID)
-		return nil
-	})
-
+	conn.Send("INCR", fmt.Sprintf("airhorn:total"))
+	conn.Send("INCR", fmt.Sprintf("airhorn:guild:%s:plays", play.GuildID))
+	conn.Send("INCR", fmt.Sprintf("airhorn:guild:%s:soundstats:%s", play.GuildID, redisSoundID))
+	conn.Send("SAdd", fmt.Sprintf("airhorn:users"), play.UserID)
+	conn.Send("SAdd", fmt.Sprintf("airhorn:guilds"), play.GuildID)
+	conn.Send("SAdd", fmt.Sprintf("airhorn:channels"), play.ChannelID)
+	err := conn.Flush()
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
@@ -545,6 +238,13 @@ func playSound(play *Play, vc *discordgo.VoiceConnection, cid string) (err error
 	log.WithFields(log.Fields{
 		"play": play,
 	}).Info("Playing sound")
+
+	// load sound file
+	soundData, err := loadSound(play.Sound)
+	if err != nil {
+		log.WithError(err).Error("Failed to read sound file")
+		return
+	}
 
 	if vc == nil {
 		vc, err = voiceConnect(play.GuildID, play.ChannelID)
@@ -576,12 +276,7 @@ func playSound(play *Play, vc *discordgo.VoiceConnection, cid string) (err error
 	}
 
 	// Play the sound
-	play.Sound.Play(vc)
-
-	// If this is chained, play the chained sound
-	if play.Next != nil {
-		playSound(play.Next, vc, cid)
-	}
+	doPlay(soundData, vc)
 
 	// If there is another song in the queue, recurse and play that
 	tmp, exists := queues.Get(play.GuildID)
@@ -596,7 +291,7 @@ func playSound(play *Play, vc *discordgo.VoiceConnection, cid string) (err error
 	}
 
 	// If the queue is empty, delete it
-	time.Sleep(time.Millisecond * time.Duration(play.Sound.PartDelay))
+	time.Sleep(time.Millisecond * time.Duration(250))
 	queues.Remove(play.GuildID)
 	voiceDisconnect(vc)
 	return nil
@@ -628,14 +323,6 @@ func scontains(key string, options ...string) bool {
 	return false
 }
 
-func calculateAirhornsPerSecond(cid string) {
-	current, _ := strconv.Atoi(rcli.Get("airhorn:a:total").Val())
-	time.Sleep(time.Second * 10)
-	latest, _ := strconv.Atoi(rcli.Get("airhorn:a:total").Val())
-
-	discord.ChannelMessageSend(cid, fmt.Sprintf("Current APS: %v", (float64(latest-current))/10.0))
-}
-
 func displayBotStats(cid string) {
 	stats := runtime.MemStats{}
 	runtime.ReadMemStats(&stats)
@@ -661,7 +348,7 @@ func displayBotStats(cid string) {
 	discord.ChannelMessageSend(cid, buf.String())
 }
 
-func displayBotCommands(cid string) {
+/*func displayBotCommands(cid string) {
 	w := &tabwriter.Writer{}
 	buf := &bytes.Buffer{}
 
@@ -688,44 +375,52 @@ func displayBotCommands(cid string) {
 	fmt.Fprint(w, "```\n")
 	w.Flush()
 	discord.ChannelMessageSend(cid, buf.String())
-}
+}*/
 
-func utilSumRedisKeys(keys []string) int {
-	results := make([]*redis.StringCmd, 0)
+func utilSumRedisKeys(keys []string) (int, error) {
+	var total int64
 
-	rcli.Pipelined(func(pipe *redis.Pipeline) error {
-		for _, key := range keys {
-			results = append(results, pipe.Get(key))
-		}
-		return nil
-	})
-
-	var total int
-	for _, i := range results {
-		t, _ := strconv.Atoi(i.Val())
-		total += t
+	values, err := common.UtilGetRedisValuesFor(redisPool, keys)
+	if err != nil {
+		return 0, err
 	}
-
-	return total
+	for _, v := range values {
+		total += int64(v.(int64))
+	}
+	return int(total), nil
 }
 
 func displayUserStats(cid, uid string) {
-	keys, err := rcli.Keys(fmt.Sprintf("airhorn:*:user:%s:sound:*", uid)).Result()
+	conn := redisPool.Get()
+	keys, err := conn.Do("KEYS", fmt.Sprintf("airhorn:user:%s:sound:*", uid))
 	if err != nil {
 		return
 	}
 
-	totalAirhorns := utilSumRedisKeys(keys)
+	totalAirhorns, err := utilSumRedisKeys(keys.([]string))
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("Error reading stats")
+		return
+	}
 	discord.ChannelMessageSend(cid, fmt.Sprintf("Total Airhorns: %v", totalAirhorns))
 }
 
 func displayServerStats(cid, sid string) {
-	keys, err := rcli.Keys(fmt.Sprintf("airhorn:*:guild:%s:sound:*", sid)).Result()
+	conn := redisPool.Get()
+	keys, err := conn.Do("KEYS", fmt.Sprintf("airhorn:guild:%s:sound:*", sid))
 	if err != nil {
 		return
 	}
 
-	totalAirhorns := utilSumRedisKeys(keys)
+	totalAirhorns, err := utilSumRedisKeys(keys.([]string))
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("Error reading stats")
+		return
+	}
 	discord.ChannelMessageSend(cid, fmt.Sprintf("Total Airhorns: %v", totalAirhorns))
 }
 
@@ -747,14 +442,16 @@ func airhornBomb(cid string, guild *discordgo.Guild, user *discordgo.User, cs st
 		return
 	}
 
-	play := createPlay(user, guild, AIRHORN, nil)
+	airhornSounds := common.FilterByCommand("airhorn", common.DefaultSounds)
+
+	play := createPlay(user, guild, airhornSounds)
 	vc, err := voiceConnect(play.GuildID, play.ChannelID)
 	if err != nil {
 		return
 	}
 
 	for i := 0; i < count; i++ {
-		AIRHORN.Random().Play(vc)
+		//random(airhornSounds).Play(vc)
 	}
 
 	voiceDisconnect(vc)
@@ -774,15 +471,12 @@ func handleBotControlMessages(s *discordgo.Session, m *discordgo.MessageCreate, 
 		}
 	} else if scontains(parts[1], "bomb") && len(parts) >= 4 {
 		airhornBomb(m.ChannelID, g, utilGetMentioned(s, m), parts[3])
-	} else if scontains(parts[1], "aps") {
-		s.ChannelMessageSend(m.ChannelID, ":ok_hand: give me a sec m8")
-		go calculateAirhornsPerSecond(m.ChannelID)
 	}
 }
 
 func handleMentionMessages(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, g *discordgo.Guild) {
 	if scontains(parts[1], "help") {
-		displayBotCommands(m.ChannelID)
+		//displayBotCommands(m.ChannelID)
 	}
 }
 
@@ -838,33 +532,51 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// Find the collection for the command we got
-	for _, coll := range COLLECTIONS {
-		if scontains(parts[0], coll.Commands...) {
+	command := strings.TrimPrefix(parts[0], "!")
 
-			// If they passed a specific sound effect, find and select that (otherwise play nothing)
-			var sound *Sound
-			if len(parts) > 1 {
-				for _, s := range coll.Sounds {
-					if parts[1] == s.Name {
-						sound = s
-					}
-				}
+	// filter default sounds
+	sounds := common.FilterByCommand(command, common.DefaultSounds)
+	conn := redisPool.Get()
 
-				if sound == nil {
-					return
-				}
-			}
+	// get keys from redis
+	r, err := conn.Do("KEYS", fmt.Sprintf("airhorn:guild:%s:sound:*", channel.GuildID))
+	keys, err := redis.Strings(r, err)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("Cannot get sound keys for this guild")
+		return
+	}
+	// get values from redis
+	values, err := common.UtilGetRedisValuesFor(redisPool, keys)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("Cannot get sound values for this guild")
+	}
 
-			go enqueuePlay(m.Author, guild, coll, sound, m.ChannelID)
-			return
+	// unmarshal and check for command
+	for _, s := range values {
+		sound := common.Sound{}
+		json.Unmarshal([]byte(s.([]byte)), &sound)
+		sound.FilePath = filepath.Join(*userAudioPath, sound.ID)
+		if sound.Command == command {
+			sounds = append(sounds, &sound)
 		}
+	}
+
+	// if we found at least one sound, play it or them
+	if len(sounds) > 0 {
+		go enqueuePlay(m.Author, guild, sounds, m.ChannelID)
+	} else {
+		log.WithField("sound", command).Info("No sound found for this command")
 	}
 }
 
 func main() {
 	var (
 		Token      = flag.String("t", "", "Discord Authentication Token")
+		DataPath   = flag.String("d", "", "User uploaded audio path")
 		Redis      = flag.String("r", "", "Redis Connection String")
 		Shard      = flag.String("s", "", "Shard ID")
 		ShardCount = flag.String("c", "", "Number of shards")
@@ -876,26 +588,38 @@ func main() {
 	if *Owner != "" {
 		owner = *Owner
 	}
+	userAudioPath = DataPath
 
-	// Preload all the sounds
-	log.Info("Preloading sounds...")
-	for _, coll := range COLLECTIONS {
-		coll.Load()
+	if *DataPath == "" {
+		panic("A data directory must be passed!")
 	}
 
 	// If we got passed a redis server, try to connect
-	if *Redis != "" {
-		log.Info("Connecting to redis...")
-		rcli = redis.NewClient(&redis.Options{Addr: *Redis, DB: 0})
-		_, err = rcli.Ping().Result()
-
-		if err != nil {
-			log.WithFields(log.Fields{
-				"error": err,
-			}).Fatal("Failed to connect to redis")
-			return
-		}
+	if *Redis == "" {
+		panic("A redis server is required")
 	}
+
+	// connect to redis
+	log.Info("Connecting to redis...")
+	redisPool = &redis.Pool{
+		MaxIdle:     3,
+		IdleTimeout: 240 * time.Second,
+		Dial: func() (redis.Conn, error) {
+			return redis.Dial("tcp", *Redis)
+		},
+	}
+	defer redisPool.Close()
+
+	// test redis connection
+	conn := redisPool.Get()
+	_, err = conn.Do("PING")
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Fatal("Can't establish a connection to the redis server")
+		return
+	}
+	conn.Close()
 
 	// Create a discord session
 	log.Info("Starting discord session...")

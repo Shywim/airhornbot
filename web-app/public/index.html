@@ -24,11 +24,11 @@
   <title>!airhorn</title>
 
   <link rel="icon" href="assets/favicon.png" />
-  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/main.min.css">
 </head>
 
 <body>
-  <div class="container">
+  <div class="section main-section" id="main-section">
     <div class="content">
       <div class="heading">
         <h1 class="title">!airhorn</h1>
@@ -36,83 +36,198 @@
       </div>
 
       <video id="video" class="video-airhorn" poster="assets/thumbnail.jpg" preload="true">
-        <source src="assets/final_island_full.mp4" type="video/mp4">
-        <source src="assets/final_island_full.ogv" type="video/ogg; codecs=theora, vorbis">
-        <source src="assets/final_island_full.webm" type="video/webm; codecs=vp8, vorbis">
-        <audio id="audio" preload="true" src="assets/airhorn.wav" type="audio/wav"></audio>
+        <source src="assets/airhorn_video.mp4" type="video/mp4">
+        <source src="assets/airhorn_video.ogv" type="video/ogg; codecs=theora, vorbis">
+        <source src="assets/airhorn_video.webm" type="video/webm; codecs=vp8, vorbis">
+        <audio id="audio" preload="true" src="assets/airhorn.ogg" type="audio/ogg; codecs=opus"></audio>
       </video>
 
       <a class="add-btn" href="/login">Add to Discord</a>
-      <a class="add-btn disabled" href="/manage" disabled>Manage my Airhorn</a>
+      <a id="manage-btn" class="add-btn disabled">Manage my Airhorn</a>
+      <noscript>
+        <hr>
+        <div class="notification is-warning">
+          JavaScript must be enabled to manage your airhorn settings, we don't do tracking nor ads!
+        </div>
+      </noscript>
     </div>
+  </div>
 
-    <div class="footer">
-      <div id="stats-panel" class="stats-panel crossfade one-reverse">
-        <div class="stats-row">
-          <img src="assets/icon-plays.svg">
-          <div class="label-value">
-            <div id="plays-count" class="value">0</div>
-            <div class="label">Plays</div>
+  <div class="section manage-section is-hidden" id="manage-section">
+    <div class="container">
+      <div class="level">
+        <div class="level-left">
+          <div class="level-item">
+            <h1 class="title is-2">Manage my !airhorn</h1>
           </div>
         </div>
-        <div class="stats-row">
-          <img src="assets/icon-users.svg">
-          <div class="label-value">
-            <div id="users-count" class="value">0</div>
-            <div class="label">Unique Users</div>
-          </div>
-        </div>
-        <div class="stats-row">
-          <img src="assets/icon-servers.svg">
-          <div class="label-value">
-            <div id="guilds-count" class="value">0</div>
-            <div class="label">Unique Servers</div>
-          </div>
-        </div>
-        <div class="stats-row">
-          <img src="assets/icon-channels.svg">
-          <div class="label-value">
-            <div id="channels-count" class="value">0</div>
-            <div class="label">Unique channels</div>
+        <div class="level-right"> 
+          <div class="level-item">
+            <a id="back-home">Back</a>
           </div>
         </div>
       </div>
 
-      <div class="footer-content">
-        <div class="airhorn-count">
-          <div id="stats-toggler" class="stats-toggler">
-            <div class="airhorn-count-content">
-              <img src="assets/airhorn-counter.svg">
-              <div class="count-text">
-                <div class="count" id="count">0</div>
-                <div class="and-counting">and counting</div>
+      <div id="manage-notification" class="notification is-warning is-hidden">
+        You are not logged in to discord, <a href="/login?nobot=1">click here to login</a>!
+      </div>
+
+      <h2 class="title is-3">Guilds with !airhorn</h2>
+      <table id="airhorn-guilds" class="table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Guild name</th>
+            <th>Custom sounds</th>
+            <th>Plays</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+
+      <h2 class="title is-3">Boring guilds</h2>
+      <table id="boring-guilds" class="table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Guild name</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div id="stats-panel" class="stats-panel crossfade one-reverse is-hidden">
+      <div class="stats-row">
+        <img src="assets/icon-plays.svg">
+        <div class="label-value">
+          <div id="plays-count" class="value">0</div>
+          <div class="label">Plays</div>
+        </div>
+      </div>
+      <div class="stats-row">
+        <img src="assets/icon-users.svg">
+        <div class="label-value">
+          <div id="users-count" class="value">0</div>
+          <div class="label">Unique Users</div>
+        </div>
+      </div>
+      <div class="stats-row">
+        <img src="assets/icon-servers.svg">
+        <div class="label-value">
+          <div id="guilds-count" class="value">0</div>
+          <div class="label">Unique Servers</div>
+        </div>
+      </div>
+      <div class="stats-row">
+        <img src="assets/icon-channels.svg">
+        <div class="label-value">
+          <div id="channels-count" class="value">0</div>
+          <div class="label">Unique channels</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-content">
+      <div class="airhorn-count">
+        <div id="stats-toggler" class="stats-toggler">
+          <div class="airhorn-count-content">
+            <img src="assets/airhorn-counter.svg">
+            <div class="count-text">
+              <div class="count" id="count">
+                <noscript>plenty of noise</noscript>
               </div>
-            </div>
-            <div class="stats-btn">
-              <img id="stats-panel-close" class="crossfade three-reverse" src="assets/icon-close.svg">
-              <img id="stats-panel-open" class="crossfade two-reverse" src="assets/icon-about.svg" tip="Click for more stats" currentitem="false">
+              <div class="and-counting">and counting</div>
             </div>
           </div>
-        </div>
-
-        <div class="main-text">
-          <span class="normal-text">
-        <span>Open sourced by the team at</span>
-          <a href="https://discordapp.com">Discord</a>
-          <span>. Tinkered with <span class="love">love</span> by Shywim.</span>
-          <br>
-          <span>Contribute yourself on</span>
-          <a href="https://github.com/shywim/airhornbot">Github ➔</a>
-          </span>
-        </div>
-
-        <div class="social">
-          <a id="share-fb"><img src="assets/icon-facebook.svg"></a>
-          <a id="share-twitter"><img src="assets/icon-twitter.svg"></a>
+          <div id="stats-btn" class="stats-btn is-hidden">
+            <img id="stats-panel-close" class="crossfade three-reverse" src="assets/icon-close.svg">
+            <img id="stats-panel-open" class="crossfade two-reverse" src="assets/icon-about.svg" tip="Click for more stats" currentitem="false">
+          </div>
         </div>
       </div>
-    </div>
 
+      <div class="main-text">
+        <span class="normal-text">
+        <span>Open sourced by the team at</span>
+        <a href="https://discordapp.com">Discord</a>
+        <span>. Tinkered with <span class="love">love</span> by Shywim.</span>
+        <br>
+        <span>Contribute yourself on</span>
+        <a href="https://github.com/shywim/airhornbot">Github ➔</a>
+        </span>
+      </div>
+
+      <div class="social">
+        <a id="share-fb"><img src="assets/icon-facebook.svg"></a>
+        <a id="share-twitter"><img src="assets/icon-twitter.svg"></a>
+      </div>
+    </div>
+  </div>
+
+  <div id="edit-sound-modal" class="modal">
+    <div class="modal-background"></div>
+    <div class="modal-card">
+      <header class="modal-card-head">
+        <p class="modal-card-title">Edit sound</p>
+      </header>
+      <section class="modal-card-body">
+        <form id="edit-sound-form" enctype="multipart/form-data">
+          <div class="field">
+            <label class="label">Sound name</label>
+            <p class="control">
+              <input name="name" class="input" type="text" placeholder="Airhorn" required>
+            </p>
+            <p class="help">
+              Only displayed in the manage interface (here)
+            </p>
+          </div>
+
+          <div class="field">
+            <label class="label">Command</label>
+            <p class="control">
+              <input name="command" class="input" type="text" placeholder="cow" required>
+            </p>
+            <p class="help">
+              Command to be used with '!' in your discord server
+            </p>
+          </div>
+
+          <div class="field">
+            <label class="label">Weight</label>
+            <p class="control">
+              <input name="weight" class="input" type="text" placeholder="2" required>
+            </p>
+            <p class="help">
+              Probability of the sound being played when there is multiple sounds with the same command
+            </p>
+          </div>
+
+          <div id="edit-sound-file" class="field">
+            <label class="label">File upload</label>
+            <p class="control">
+              <input name="file" type="file" required accept=".mp3, .ogg, .dca">
+            </p>
+            <p class="help">
+              Maximum size: 200KB <i>tip: <a href="https://github.com/bwmarrin/dca">Discord Audio (.dca) file</a> are smaller!</i>
+            </p>
+          </div>
+        </form>
+      </section>
+      <footer class="modal-card-foot">
+        <input name="submit" type="submit" form="edit-sound-form" class="button is-success" value="Save changes" />
+        <button class="button">Cancel</button>
+      </footer>
+    </div>
+  </div>
+
+  <div class="is-hidden">
+    <iframe name="voidling"></iframe>
   </div>
 
   <script type="text/javascript" src="js/main.js"></script>

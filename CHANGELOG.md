@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added 
+ - **all** *CAN NOW UPLOAD NEW SOUNDS THROUGH THE WEB PAGE, WOO*
  - **bot** Can now send gifs along playing sounds
  - **bot** New help command (using `@Airhorn help`)
  - **web-app** Stats now displayed on mobile
@@ -23,7 +24,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
  - **build** Removed Gulp
  
 ### Fixed
- - **bot** Fix for discordgo change on `GuildCreate.Guild.Unavaible` [hammerandchisel/airhornbot][origin35]
+ - **bot** Fix for discordgo change on `GuildCreate.Guild.Unavaible` [hammerandchisel/airhornbot#35][origin35]
  - **bot** Fix for discord api auth change [hammerandchisel/discord-api-docs#119][dad119]
  - **bot** Fixed play queue that was not thread safe
  - **bot** Fixed EventSource for nginx

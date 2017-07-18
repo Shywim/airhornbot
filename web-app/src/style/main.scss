@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css?family=Lato:400,700');
+@import "node_modules/bulma/bulma.sass";
 
 /* UTILS */
 .disabled {
@@ -8,32 +9,46 @@
 /***/
 
 html, body {
+  min-height: 100vh;
   margin: 0;
   padding: 0;
-  overflow: hidden;
   font-family: 'Lato', sans-serif;
-}
-
-.container {
-  position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: 100%;
   overflow-y: auto;
 }
 
+.section.main-section {
+  flex: 1;
+}
+
+.section.manage-section {
+  flex: 2;
+}
+
+.manage-section thead tr :first-child {
+  width: 100px;
+}
+
+.manage-section thead tr :nth-child(3) {
+  width: 160px;
+}
+
+.manage-section thead tr :nth-child(4) {
+  width: 160px;
+}
+
 .content {
-  margin-top: 100px;
-  margin-bottom: 60px;
 	z-index: 1;
 	display: flex;
   flex: 1 0 auto;
 	flex-flow: column nowrap;
 	align-items: center;
 	transition: margin-top 0.5s ease 0s;
+}
+
+img.guild-logo {
+  border-radius: 50%;
 }
 
 .heading {
@@ -91,6 +106,7 @@ html, body {
 .footer {
   display: flex;
   width: 100%;
+  padding: 0;
 }
 
 .footer-content {
@@ -216,7 +232,18 @@ html, body {
 	padding-left: 10px;
 }
 
-@media(max-width: 1060px){
+p.with-button {
+  display: flex;
+  align-items: baseline;
+}
+
+@media(min-width: 1000px){
+  .main-section {
+    margin-top: 100px;
+  }
+}
+
+@media(max-width: 999px){
   .video-airhorn {
     height: 160px;
   }
