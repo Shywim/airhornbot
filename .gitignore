@@ -8,5 +8,7 @@ requests.log
 dist
 node_modules
 .idea/
-web-app/public/js
 .vscode/
+
+web-app/public/js
+web-app/public/css

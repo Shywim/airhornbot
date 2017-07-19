@@ -16,5 +16,11 @@
     "node-sass": "^4.5.3",
     "postcss-cli": "^4.1.0",
     "typescript": "^2.4.1"
+  },
+  "optionalDependencies": {
+    "stylelint-config-sass-guidelines": "^2.2.0"
+  },
+  "stylelint": {
+    "extends": "stylelint-config-sass-guidelines"
   }
 }

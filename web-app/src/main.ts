@@ -1,13 +1,14 @@
-(function () {
+(() => {
   const AIRHORN_URL = 'https://airhorn.shywim.fr'
   const MESSAGE_TWITTER = 'This Discord bot makes airhorn sounds ayy lmao'
   const HASHTAGS_TWITTER = 'ReadyForHorning'
   const FB_SHARE_URL = `http://www.facebook.com/sharer.php?u=${AIRHORN_URL}`
-  const TWITTER_SHARE_URL = `https://twitter.com/share?text=${MESSAGE_TWITTER}&url=${AIRHORN_URL}&hashtags=${HASHTAGS_TWITTER}`
+  const TWITTER_SHARE_URL =
+    `https://twitter.com/share?text=${MESSAGE_TWITTER}&url=${AIRHORN_URL}&hashtags=${HASHTAGS_TWITTER}`
   const MODAL_ID = 'modal'
 
-  const video: HTMLVideoElement = <HTMLVideoElement>document.getElementById('video')
-  const audio: HTMLAudioElement = <HTMLAudioElement>document.getElementById('audio')
+  const video: HTMLVideoElement = document.getElementById('video') as HTMLVideoElement
+  const audio: HTMLAudioElement = document.getElementById('audio') as HTMLAudioElement
   const count: HTMLElement = document.getElementById('count')
   const playsCount: HTMLElement = document.getElementById('plays-count')
   const usersCount: HTMLElement = document.getElementById('users-count')
@@ -28,28 +29,28 @@
 
   let statsTogglerState = false
   const stats = {
-    count: 0,
-    users: 0,
-    guilds: 0,
     channels: 0,
+    count: 0,
+    guilds: 0,
+    users: 0,
   }
 
   // video handler
-  video.addEventListener('ended', function () {
+  video.addEventListener('ended', () => {
     video.currentTime = 0
   }, false)
-  video.onclick = function () {
+  video.onclick = () => {
     video.play()
     audio.play()
   }
 
-  // bot stats 
-  const removeCountBig = function () {
+  // bot stats
+  const removeCountBig = () => {
     count.classList.remove('count-big')
   }
   if (EventSource != null) {
     const es: EventSource = new EventSource('/events')
-    es.onmessage = function (msg) {
+    es.onmessage = (msg) => {
       const data = JSON.parse(msg.data)
 
       if (stats.count !== data.total) {
@@ -71,7 +72,7 @@
   }
 
   // panel handler
-  statsToggler.onclick = function () {
+  statsToggler.onclick = () => {
     let remove
     let add
     if (statsTogglerState === false) {
@@ -91,7 +92,7 @@
   }
 
   // social share
-  const openShare = function (url) {
+  const openShare = (url) => {
     window.open(url, '', 'height=500, width=500')
   }
   shareFb.onclick = () => openShare(FB_SHARE_URL)
@@ -102,21 +103,21 @@
     const params = new URLSearchParams(location.search.slice(1))
     const keyToSuccess = params.get('key_to_success')
     if (keyToSuccess === '1') {
-      setTimeout(function () {
+      setTimeout(() => {
         video.play()
         audio.play()
       }, 1000)
     }
   }
 
-  //--- MANAGE ---
-  (function () {
+  // --- MANAGE ---
+  (() => {
     const manageState = {
+      extendedRow: -1,
       guilds: {
         airhorn: [],
         boring: [],
       },
-      extendedRow: -1,
     }
     const mainSection: Element = document.getElementsByClassName('main-section')[0]
     const manageNotification: HTMLElement = document.getElementById('manage-notification')
@@ -126,13 +127,13 @@
     const airhornTable: HTMLElement = document.getElementById('airhorn-guilds')
     const boringTable: HTMLElement = document.getElementById('boring-guilds')
     const editSoundModal: HTMLElement = document.getElementById('edit-sound-modal')
-    const editSoundModalForm: HTMLFormElement = <HTMLFormElement>document.getElementById('edit-sound-form')
+    const editSoundModalForm: HTMLFormElement = document.getElementById('edit-sound-form') as HTMLFormElement
     const editSoundModalFile: HTMLElement = document.getElementById('edit-sound-file')
     const editSoundModalCancel: HTMLElement = editSoundModal.getElementsByTagName('button')[0]
 
     /**
      * Switch between home and manage section
-     * @param show 
+     * @param show
      */
     const showHideManage = (show: boolean) => {
       if (show === true) {
@@ -153,23 +154,28 @@
     /**
      * Display the form for editing a sound details or creating a new sound
      * @param guildId
-     * @param sound 
+     * @param sound
      */
     const editSound = (guildId: string, sound?: Sound) => {
+      const nameKey = 'name'
+      const commandKey = 'command'
+      const weightKey = 'weight'
+      const fileKey = 'file'
+
       if (sound != null) {
         editSoundModalForm.action = `/manage/${guildId}/${sound.id}`
-        editSoundModalForm.elements['name'].value = sound.name
-        editSoundModalForm.elements['command'].value = sound.command
-        editSoundModalForm.elements['weight'].value = sound.weight
-        editSoundModalForm.elements['file'].required = false
+        editSoundModalForm.elements[nameKey].value = sound.name
+        editSoundModalForm.elements[commandKey].value = sound.command
+        editSoundModalForm.elements[weightKey].value = sound.weight
+        editSoundModalForm.elements[fileKey].required = false
         editSoundModalFile.classList.add('is-hidden')
         editSoundModalForm.onsubmit = () => postForm(guildId, sound.id)
       } else {
         editSoundModalForm.action = `/manage/${guildId}/new`
-        editSoundModalForm.elements['name'].value = ''
-        editSoundModalForm.elements['command'].value = ''
-        editSoundModalForm.elements['weight'].value = ''
-        editSoundModalForm.elements['file'].required = true
+        editSoundModalForm.elements[nameKey].value = ''
+        editSoundModalForm.elements[commandKey].value = ''
+        editSoundModalForm.elements[weightKey].value = ''
+        editSoundModalForm.elements[fileKey].required = true
         editSoundModalFile.classList.remove('is-hidden')
         editSoundModalForm.onsubmit = () => postForm(guildId)
       }
@@ -183,8 +189,8 @@
      */
     const postForm = (guildId: string, soundId?: string) => {
       const formData: FormData = new FormData(editSoundModalForm)
-
-      let url, method
+      let url
+      let method
       // if the sound is null it is a new sound
       if (soundId == null) {
         url = `/manage/${guildId}/new`
@@ -195,9 +201,9 @@
       }
 
       fetch(url, {
-        method,
         body: formData,
         credentials: 'same-origin',
+        method,
       })
       .then((response) => {
         if (response.ok === true) {
@@ -218,8 +224,8 @@
      */
     const deleteSound = (guildId: string, soundId: string) => {
       return fetch(`/manage/${guildId}/${soundId}`, {
-        method: 'DELETE',
         credentials: 'same-origin',
+        method: 'DELETE',
       })
       .then((response) => {
         if (response.ok === true) {
@@ -241,11 +247,10 @@
 
         if (response.status === 401) {
           manageNotification.classList.remove('is-hidden')
-          return Promise.reject("unauthorized")
+          return Promise.reject('unauthorized')
         }
       })
       .then((json: GuildsResponse) => manageState.guilds = json)
-      .catch((err) => console.error(err))
       // TODO: handle errors
     }
 
@@ -294,12 +299,12 @@
         const message: HTMLElement = document.createElement('p')
         message.classList.add('with-button')
         message.textContent = 'There is no custom sound yet, '
-        const button: HTMLElement = document.createElement('button')
-        button.classList.add('button', 'is-primary')
-        button.textContent = 'Add One'
-        button.onclick = () => editSound(guild.id)
+        const newButton: HTMLElement = document.createElement('button')
+        newButton.classList.add('button', 'is-primary')
+        newButton.textContent = 'Add One'
+        newButton.onclick = () => editSound(guild.id)
 
-        message.appendChild(button)
+        message.appendChild(newButton)
         messageDiv.appendChild(message)
         cell.appendChild(messageDiv)
         return

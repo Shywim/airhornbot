@@ -1,11 +1,20 @@
 @import url('https://fonts.googleapis.com/css?family=Lato:400,700');
-@import "node_modules/bulma/bulma.sass";
+@import "node_modules/bulma/sass/utilities/initial-variables";
+
+$brown:  hsl(7, 29%, 29%);
+$orange: hsl(3, 100%, 67%);
+
+// set bulma variables
+$primary: $brown;
+
+@import "node_modules/bulma/bulma";
 
 /* UTILS */
 .disabled {
   pointer-events: none;
   opacity: 0.6;
 }
+
 /***/
 
 html, body {
@@ -26,25 +35,23 @@ html, body {
   flex: 2;
 }
 
-.manage-section thead tr :first-child {
-  width: 100px;
-}
+.manage-section thead tr {
+  :first-child {
+    width: 100px;
+  }
 
-.manage-section thead tr :nth-child(3) {
-  width: 160px;
-}
-
-.manage-section thead tr :nth-child(4) {
-  width: 160px;
+  :nth-child(3), :nth-child(4) {
+    width: 160px;
+  }
 }
 
 .content {
-	z-index: 1;
-	display: flex;
+  z-index: 1;
+  display: flex;
   flex: 1 0 auto;
-	flex-flow: column nowrap;
-	align-items: center;
-	transition: margin-top 0.5s ease 0s;
+  flex-flow: column nowrap;
+  align-items: center;
+  transition: margin-top 0.5s ease 0s;
 }
 
 img.guild-logo {
@@ -53,54 +60,55 @@ img.guild-logo {
 
 .heading {
   text-align: center;
-}
 
-.content .heading .title {
-	color: rgb(34, 34, 34);
-	font-size: 64px;
-	line-height: 68px;
-	margin: 0px;
-}
+  .title {
+    color: $black-bis;
+    font-size: 64px;
+    line-height: 68px;
+    margin: 0px
+  }
 
-.content .heading .message {
-	margin-top: 0px;
-	color: rgb(94, 70, 52);
-	font-size: 15px;
-	line-height: 24px;
-	opacity: 0.6;
+  .message {
+    margin-top: 0px;
+    color: $brown;
+    font-size: 15px;
+    line-height: 24px;
+    opacity: 0.6;
+  }
 }
 
 .video-airhorn {
-	padding: 10px;
-	width: 681px;
-	max-width: 90%;
-	outline: medium none currentcolor;
-	cursor: pointer;
-	height: 248px;
+  padding: 10px;
+  width: 681px;
+  max-width: 90%;
+  outline: medium none currentcolor;
+  cursor: pointer;
+  height: 248px;
 }
 
 .add-btn {
-	background: rgb(255, 255, 255) none repeat scroll 0% 0%;
-	border: 2px dashed rgb(94, 70, 52);
-	border-radius: 30px;
-	width: 240px;
-	height: 50px;
-	text-align: center;
-	font-size: 18px;
+  background: $white none repeat scroll 0% 0%;
+  border: 2px dashed $brown;
+  border-radius: 30px;
+  width: 240px;
+  height: 50px;
+  text-align: center;
+  font-size: 18px;
   font-weight: 700px;
-	color: rgb(255, 117, 85);
-	line-height: 50px;
-	text-transform: uppercase;
-	transition: all 0.1s ease-in-out 0s;
-	cursor: pointer;
-	text-decoration: none;
-	display: block;
+  color: $orange;
+  line-height: 50px;
+  text-transform: uppercase;
+  transition: all 200ms $easing;
+  cursor: pointer;
+  text-decoration: none;
+  display: block;
   margin-top: 20px;
-}
 
-.add-btn:hover {
-  background: rgb(94, 70, 52);
-  border: 2px solid rgb(94, 70, 52);
+  &:hover {
+    background: $brown;
+    border: 2px solid $brown;
+    color: $white;
+  }
 }
 
 .footer {
@@ -112,14 +120,14 @@ img.guild-logo {
 .footer-content {
   display: flex;
   width: 100%;
-	justify-content: space-between;
-	background-color: rgb(255, 255, 255);
-	opacity: 0.98;
-	padding: 24px 20px;
-	font-size: 18px;
-	line-height: 24px;
-	box-shadow: rgba(0, 0, 0, 0.1) 0px -1px 0px 0px;
-	z-index: 2;
+  justify-content: space-between;
+  background-color: $white;
+  opacity: 0.98;
+  padding: 24px 20px;
+  font-size: 18px;
+  line-height: 24px;
+  box-shadow: rgba(0, 0, 0, 0.1) 0px -1px 0px 0px;
+  z-index: 2;
 }
 
 .airhorn-count, .stats-toggler {
@@ -131,73 +139,73 @@ img.guild-logo {
 }
 
 .stats-panel {
-	position: absolute;
-	padding: 10px 75px 10px 8px;
-	background: rgb(255, 255, 255) none repeat scroll 0% 0%;
-	opacity: 0.98;
-	border: 1px solid rgba(0, 0, 0, 0.1);
-	border-radius: 3px;
-	z-index: 1;
+  position: absolute;
+  padding: 10px 75px 10px 8px;
+  background: $white none repeat scroll 0% 0%;
+  opacity: 0.98;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+  z-index: 1;
 }
 
 .stats-panel .stats-row {
-	display: flex;
-	margin-bottom: 5px;
+  display: flex;
+  margin-bottom: 5px;
 }
 
 .stats-row .label-value {
-	margin-left: 8px;
+  margin-left: 8px;
 }
 
 .stats-row .label-value .value {
-	font-weight: 700;
-	font-size: 14px;
-	line-height: 19px;
-	color: rgb(94, 70, 52);
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 19px;
+  color: $brown;
 }
 
 .stats-row .label-value .label {
-	font-weight: 700;
-	font-size: 10px;
-	line-height: 12px;
-	color: rgb(204, 204, 204);
-	text-transform: uppercase;
+  font-weight: 700;
+  font-size: 10px;
+  line-height: 12px;
+  color: $white-bis;
+  text-transform: uppercase;
 }
 
 .airhorn-count .stats-toggler .airhorn-count-content {
-	align-items: center;
-	display: flex;
-	font-size: 12px;
-	line-height: 16px;
-	font-weight: 500;
-	width: 170px;
+  align-items: center;
+  display: flex;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  width: 170px;
 }
 
 .airhorn-count-content .count-text {
-	margin-left: 10px;
+  margin-left: 10px;
 }
 
 .airhorn-count-content .count-text .count {
-	display: flex;
-	justify-content: center;
-	color: rgb(102, 102, 102);
-	transition: all 0.2s ease 0s;
+  display: flex;
+  justify-content: center;
+  color: $grey;
+  transition: all 0.2s ease 0s;
 }
 
 .airhorn-count-content .count-text .count.count-big {
-  font-size: 18px;
+  font-size: $size-4;
 }
 
 .airhorn-count-content .count-text .and-counting {
-	color: rgb(204, 204, 204);
+  color: $white-ter;
 }
 
 .footer .airhorn-count .stats-toggler .stats-btn {
-	z-index: 3;
+  z-index: 3;
 }
 
 .stats-btn img:first-child {
-	position: absolute;
+  position: absolute;
 }
 
 .stats-btn img:nth-child(2) {
@@ -206,30 +214,30 @@ img.guild-logo {
 }
 
 .footer .main-text, .footer .main-text a {
-	text-align: center;
-	color: rgb(94, 70, 52);
-	align-self: center;
-	max-width: calc(-550px + 100%);
+  text-align: center;
+  color: $brown;
+  align-self: center;
+  max-width: calc(-550px + 100%);
 }
 
 .footer .main-text .normal-text, .footer a .normal-text {
-	opacity: 0.6;
+  opacity: 0.6;
 }
 
 .footer .main-text .arrow, .footer a .arrow {
-	text-decoration: none;
+  text-decoration: none;
 }
 
 .footer .social {
-	display: flex;
-	justify-content: flex-end;
-	align-self: center;
-	width: 228px;
+  display: flex;
+  justify-content: flex-end;
+  align-self: center;
+  width: 228px;
 }
 
 .footer .social > a {
-	cursor: pointer;
-	padding-left: 10px;
+  cursor: pointer;
+  padding-left: 10px;
 }
 
 p.with-button {
@@ -346,19 +354,19 @@ p.with-button {
 }
 
 .crossfade {
-	animation-duration: 0.4s;
-	animation-timing-function: cubic-bezier(0.5, -0.25, 0.3, 1.25);
-	animation-fill-mode: forwards;
+  animation-duration: 0.4s;
+  animation-timing-function: cubic-bezier(0.5, -0.25, 0.3, 1.25);
+  animation-fill-mode: forwards;
 }
 
 .crossfade.one {
-	animation-duration: 0.2s;
-	animation-name: crossfade-one;
+  animation-duration: 0.2s;
+  animation-name: crossfade-one;
 }
 
 .crossfade.one-reverse {
-	animation-duration: 0.2s;
-	animation-name: crossfade-one-reverse;
+  animation-duration: 0.2s;
+  animation-name: crossfade-one-reverse;
 }
 
 .crossfade.two {
