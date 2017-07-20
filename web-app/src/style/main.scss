@@ -27,6 +27,10 @@ html, body {
   overflow-y: auto;
 }
 
+a.back-home {
+  color: $orange;
+}
+
 .section.main-section {
   flex: 1;
 }
@@ -168,7 +172,7 @@ img.guild-logo {
   font-weight: 700;
   font-size: 10px;
   line-height: 12px;
-  color: $white-bis;
+  color: $orange;
   text-transform: uppercase;
 }
 
@@ -197,7 +201,7 @@ img.guild-logo {
 }
 
 .airhorn-count-content .count-text .and-counting {
-  color: $white-ter;
+  color: $orange;
 }
 
 .footer .airhorn-count .stats-toggler .stats-btn {

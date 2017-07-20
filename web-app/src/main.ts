@@ -329,8 +329,11 @@
       const editHead: HTMLTableHeaderCellElement = headerRow.insertCell(3)
       const deleteHead: HTMLTableHeaderCellElement = headerRow.insertCell(4)
       nameHead.innerText = 'Name'
+      nameHead.style.minWidth = '160px'
       commandHead.innerText = 'Command'
+      commandHead.style.minWidth = '80px'
       weightHead.innerText = 'Weight'
+      weightHead.style.minWidth = '40px'
       editHead.style.width = '80px'
       deleteHead.style.width = '80px'
 
