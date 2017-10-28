@@ -9,6 +9,9 @@ dist
 node_modules
 .idea/
 .vscode/
+airhornbot
+airhornweb
+vendor/
 
 web-app/public/js
 web-app/public/css
