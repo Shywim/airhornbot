@@ -1,13 +1,13 @@
 @import url('https://fonts.googleapis.com/css?family=Lato:400,700');
-@import "node_modules/bulma/sass/utilities/initial-variables";
+@import 'node_modules/bulma/sass/utilities/initial-variables';
 
-$brown:  hsl(7, 29%, 29%);
+$brown: hsl(7, 29%, 29%);
 $orange: hsl(3, 100%, 67%);
 
 // set bulma variables
 $primary: $brown;
 
-@import "node_modules/bulma/bulma";
+@import 'node_modules/bulma/bulma';
 
 /* UTILS */
 .disabled {
@@ -17,7 +17,8 @@ $primary: $brown;
 
 /***/
 
-html, body {
+html,
+body {
   min-height: 100vh;
   margin: 0;
   padding: 0;
@@ -25,9 +26,15 @@ html, body {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  background: #fff;
 }
 
-a.back-home {
+.table,
+.section {
+  background: none;
+}
+
+.back-home {
   color: $orange;
 }
 
@@ -39,13 +46,54 @@ a.back-home {
   flex: 2;
 }
 
-.manage-section thead tr {
-  :first-child {
+.guild-list {
+  width: 100%;
+}
+
+.guild-list > thead > tr {
+  &:first-child {
     width: 100px;
   }
 
-  :nth-child(3), :nth-child(4) {
+  &:nth-child(3),
+  &:nth-child(4) {
     width: 160px;
+  }
+}
+
+.guild-list > tbody > tr {
+  height: 100px;
+
+  &.selected:hover {
+    background: none;
+  }
+}
+
+.relative-wrapper {
+  position: relative;
+}
+
+.circle-container {
+  overflow: hidden;
+  width: 100%;
+  top: -100px;
+  position: absolute;
+}
+
+.circle-reveal {
+  border-radius: 50%;
+  width: 0;
+  height: 0;
+  position: relative;
+  top: 50px;
+  left: 50px;
+  background: #eee;
+  opacity: 1;
+  transition: all 300ms cubic-bezier(0, 0.995, 0.99, 1);
+
+  &.expand {
+    top: -500px;
+    left: -400px;
   }
 }
 
@@ -69,11 +117,11 @@ img.guild-logo {
     color: $black-bis;
     font-size: 64px;
     line-height: 68px;
-    margin: 0px
+    margin: 0;
   }
 
   .message {
-    margin-top: 0px;
+    margin-top: 0;
     color: $brown;
     font-size: 15px;
     line-height: 24px;

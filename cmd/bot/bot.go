@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -11,7 +10,6 @@ import (
 	"math/rand"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"plugin"
 	"runtime"
 	"strconv"
@@ -584,34 +582,11 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// filter default sounds
 	sounds := common.FilterByCommand(command, common.DefaultSounds)
-	conn := redisPool.Get()
-
-	// get keys from redis
-	r, err := conn.Do("KEYS", fmt.Sprintf("airhorn:guild:%s:sound:*", channel.GuildID))
-	keys, err := redis.Strings(r, err)
+	guildSounds, err := common.GetSoundsByCommand(command, channel.GuildID)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Error("Cannot get sound keys for this guild")
-		return
+		// TODO:
 	}
-	// get values from redis
-	values, err := common.UtilGetRedisValuesFor(redisPool, keys)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Error("Cannot get sound values for this guild")
-	}
-
-	// unmarshal and check for command
-	for _, s := range values {
-		sound := common.Sound{}
-		json.Unmarshal([]byte(s.([]byte)), &sound)
-		sound.FilePath = filepath.Join(*userAudioPath, sound.ID)
-		if sound.Command == command {
-			sounds = append(sounds, &sound)
-		}
-	}
+	sounds = append(sounds, guildSounds)
 
 	// check plugins
 	sounds = append(sounds, findPluginForSound(command)...)
