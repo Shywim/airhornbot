@@ -3,13 +3,16 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math/rand"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"plugin"
 	"runtime"
 	"strconv"
 	"strings"
@@ -23,6 +26,10 @@ import (
 	"github.com/jonas747/dca"
 	"github.com/orcaman/concurrent-map"
 	"github.com/shywim/airhornbot/common"
+)
+
+const (
+	pluginsDir = "./plugins/"
 )
 
 var (
@@ -45,7 +52,15 @@ var (
 	owner string
 
 	userAudioPath *string
+
+	plugins map[string]*airhornPlugin
 )
+
+type airhornPlugin struct {
+	name     string
+	handle   func(string) bool
+	getSound func(string) [][]byte
+}
 
 // Play represents an individual use of the !airhorn command
 type Play struct {
@@ -127,7 +142,25 @@ func randomRange(min, max int) int {
 	return rand.Intn(max-min) + min
 }
 
+func loadSoundFromPlugin(pluginName, name string) (buffer [][]byte, err error) {
+	plugin := plugins[pluginName]
+	if plugin == nil {
+		return nil, errors.New("Couldn't find a matching plugin for sound")
+	}
+
+	soundData := plugin.getSound(name)
+	if soundData == nil {
+		return nil, errors.New("Failed to get sound from plugin")
+	}
+
+	return soundData, nil
+}
+
 func loadSound(s *common.Sound) (buffer [][]byte, err error) {
+	if strings.HasPrefix(s.FilePath, "@plugin/") {
+		return loadSoundFromPlugin(strings.TrimPrefix(s.FilePath, "@plugin/"), s.Name)
+	}
+
 	file, err := os.Open(s.FilePath)
 	if err != nil {
 		return nil, err
@@ -480,6 +513,21 @@ func handleMentionMessages(s *discordgo.Session, m *discordgo.MessageCreate, par
 	}
 }
 
+func findPluginForSound(name string) (sounds []*common.Sound) {
+	for _, p := range plugins {
+		if p.handle(name) {
+			sound := &common.Sound{
+				FilePath: "@plugin/" + p.name,
+				Name:     name,
+				Weight:   1,
+			}
+			sounds = append(sounds, sound)
+		}
+	}
+
+	return
+}
+
 func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if len(m.Content) <= 0 || (m.Content[0] != '!' && len(m.Mentions) < 1) {
 		return
@@ -565,11 +613,62 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 
+	// check plugins
+	sounds = append(sounds, findPluginForSound(command)...)
+
 	// if we found at least one sound, play it or them
 	if len(sounds) > 0 {
 		go enqueuePlay(m.Author, guild, sounds, m.ChannelID)
 	} else {
 		log.WithField("sound", command).Info("No sound found for this command")
+	}
+}
+
+func loadPlugins() {
+	files, err := ioutil.ReadDir(pluginsDir)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("Couldn't load plugins directory")
+	}
+
+	for _, file := range files {
+		if !file.IsDir() && strings.Contains(file.Name(), ".so") {
+			p, err := plugin.Open(pluginsDir + file.Name())
+			if err != nil {
+				log.WithFields(log.Fields{
+					"error":  err,
+					"plugin": file.Name(),
+				}).Warn("Couldn't load plugin")
+				continue
+			}
+
+			handleFunc, err := p.Lookup("Handle")
+			if err != nil {
+				log.WithFields(log.Fields{
+					"error":  err,
+					"plugin": file.Name(),
+				}).Warn("Couldn't load the Handle function from plugin")
+			}
+
+			getSoundFunc, err := p.Lookup("GetSound")
+			if err != nil {
+				log.WithFields(log.Fields{
+					"error":  err,
+					"plugin": file.Name(),
+				}).Warn("Couldn't load the GetSound function from plugin")
+			}
+
+			plug := &airhornPlugin{
+				name:     handleFunc.(string),
+				handle:   handleFunc.(func(string) bool),
+				getSound: getSoundFunc.(func(string) [][]byte),
+			}
+			plugins[plug.name] = plug
+			log.WithFields(log.Fields{
+				"plugin": file.Name(),
+			}).Info("Loaded plugin")
+		}
 	}
 }
 
@@ -584,6 +683,8 @@ func main() {
 		err        error
 	)
 	flag.Parse()
+
+	loadPlugins()
 
 	if *Owner != "" {
 		owner = *Owner
