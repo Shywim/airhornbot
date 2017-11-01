@@ -643,11 +643,20 @@ func loadPlugins() {
 				continue
 			}
 
-			handleFunc, err := p.Lookup("Handle")
+			name, err := p.Lookup("Name")
 			if err != nil {
 				log.WithFields(log.Fields{
 					"error":  err,
 					"plugin": file.Name(),
+				}).Error("Couldn't load Name from plugin")
+				continue
+			}
+
+			handleFunc, err := p.Lookup("Handle")
+			if err != nil {
+				log.WithFields(log.Fields{
+					"error":  err,
+					"plugin": name,
 				}).Warn("Couldn't load the Handle function from plugin")
 			}
 
@@ -655,12 +664,12 @@ func loadPlugins() {
 			if err != nil {
 				log.WithFields(log.Fields{
 					"error":  err,
-					"plugin": file.Name(),
+					"plugin": name,
 				}).Warn("Couldn't load the GetSound function from plugin")
 			}
 
 			plug := &airhornPlugin{
-				name:     handleFunc.(string),
+				name:     name.(string),
 				handle:   handleFunc.(func(string) bool),
 				getSound: getSoundFunc.(func(string) [][]byte),
 			}
