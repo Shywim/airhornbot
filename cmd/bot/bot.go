@@ -630,6 +630,7 @@ func loadPlugins() {
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Error("Couldn't load plugins directory")
+		return
 	}
 
 	for _, file := range files {
