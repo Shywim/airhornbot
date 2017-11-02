@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -507,6 +506,7 @@ func handleBotControlMessages(s *discordgo.Session, m *discordgo.MessageCreate, 
 
 func handleMentionMessages(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, g *discordgo.Guild) {
 	if scontains(parts[1], "help") {
+		// TODO: help
 		//displayBotCommands(m.ChannelID)
 	}
 }
@@ -534,7 +534,7 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	msg := strings.Replace(m.ContentWithMentionsReplaced(), s.State.Ready.User.Username, "username", 1)
 	parts := strings.Split(strings.ToLower(msg), " ")
 
-	channel, _ := discord.State.Channel(m.ChannelID)
+	channel, _ := s.State.Channel(m.ChannelID)
 	if channel == nil {
 		log.WithFields(log.Fields{
 			"channel": m.ChannelID,
@@ -543,7 +543,7 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	guild, _ := discord.State.Guild(channel.GuildID)
+	guild, _ := s.State.Guild(channel.GuildID)
 	if guild == nil {
 		log.WithFields(log.Fields{
 			"guild":   channel.GuildID,
@@ -584,9 +584,11 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	sounds := common.FilterByCommand(command, common.DefaultSounds)
 	guildSounds, err := common.GetSoundsByCommand(command, channel.GuildID)
 	if err != nil {
-		// TODO:
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Warn("Couldn't get sounds from db")
 	}
-	sounds = append(sounds, guildSounds)
+	sounds = append(sounds, guildSounds...)
 
 	// check plugins
 	sounds = append(sounds, findPluginForSound(command)...)
@@ -658,32 +660,11 @@ func loadPlugins() {
 }
 
 func main() {
-	var (
-		Token      = flag.String("t", "", "Discord Authentication Token")
-		DataPath   = flag.String("d", "", "User uploaded audio path")
-		Redis      = flag.String("r", "", "Redis Connection String")
-		Shard      = flag.String("s", "", "Shard ID")
-		ShardCount = flag.String("c", "", "Number of shards")
-		Owner      = flag.String("o", "", "Owner ID")
-		err        error
-	)
-	flag.Parse()
+	cfg := common.LoadConfig()
 
 	loadPlugins()
 
-	if *Owner != "" {
-		owner = *Owner
-	}
-	userAudioPath = DataPath
-
-	if *DataPath == "" {
-		panic("A data directory must be passed!")
-	}
-
-	// If we got passed a redis server, try to connect
-	if *Redis == "" {
-		panic("A redis server is required")
-	}
+	userAudioPath = &cfg.DataPath
 
 	// connect to redis
 	log.Info("Connecting to redis...")
@@ -691,14 +672,14 @@ func main() {
 		MaxIdle:     3,
 		IdleTimeout: 240 * time.Second,
 		Dial: func() (redis.Conn, error) {
-			return redis.Dial("tcp", *Redis)
+			return redis.Dial("tcp", cfg.RedisHost)
 		},
 	}
 	defer redisPool.Close()
 
 	// test redis connection
 	conn := redisPool.Get()
-	_, err = conn.Do("PING")
+	_, err := conn.Do("PING")
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
@@ -709,20 +690,12 @@ func main() {
 
 	// Create a discord session
 	log.Info("Starting discord session...")
-	discord, err = discordgo.New(fmt.Sprintf("Bot %v", *Token))
+	discord, err = discordgo.New(fmt.Sprintf("Bot %v", cfg.DiscordToken))
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Fatal("Failed to create discord session")
 		return
-	}
-
-	// Set sharding info
-	discord.ShardID, _ = strconv.Atoi(*Shard)
-	discord.ShardCount, _ = strconv.Atoi(*ShardCount)
-
-	if discord.ShardCount <= 0 {
-		discord.ShardCount = 1
 	}
 
 	discord.AddHandler(onReady)
@@ -744,4 +717,6 @@ func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, os.Kill)
 	<-c
+
+	discord.Close()
 }

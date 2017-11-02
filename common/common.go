@@ -2,22 +2,32 @@ package common
 
 import (
 	"database/sql"
+	"fmt"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/garyburd/redigo/redis"
+	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
 )
 
 type Cfg struct {
-	DBDriver       string
-	DBHost         string
-	DBUser         string
-	DBPassword     string
-	RedisHost      string
-	DiscordToken   string
-	DataPath       string
-	DiscordOwnerID string
+	DBDriver            string
+	DBSSL               bool
+	DBHost              string
+	DBPort              string
+	DBUser              string
+	DBPassword          string
+	DBName              string
+	RedisHost           string
+	DiscordToken        string
+	DiscordClientID     string
+	DiscordClientSecret string
+	DataPath            string
+	DiscordOwnerID      string
 }
+
+var config *Cfg
 
 func LoadConfig() *Cfg {
 	viper.SetConfigName("config")
@@ -30,14 +40,29 @@ func LoadConfig() *Cfg {
 	}
 
 	cfg := &Cfg{}
-	cfg.DBDriver = viper.GetString("database_driver")
-	cfg.DBHost = viper.GetString("database_host")
-	cfg.DBUser = viper.GetString("database_user")
-	cfg.DBPassword = viper.GetString("database_password")
-	cfg.RedisHost = viper.GetString("redis_host")
-	cfg.DiscordToken = viper.GetString("discord_token")
-	cfg.DataPath = viper.GetString("data_path")
-	cfg.DiscordOwnerID = viper.GetString("discord_owner_id")
+	cfg.DBDriver = viper.GetString("database.driver")
+	cfg.DBSSL = viper.GetBool("database.ssl")
+	cfg.DBHost = viper.GetString("database.host")
+	cfg.DBPort = viper.GetString("database.port")
+	cfg.DBUser = viper.GetString("database.user")
+	cfg.DBPassword = viper.GetString("database.password")
+	cfg.DBName = viper.GetString("database.name")
+	cfg.RedisHost = viper.GetString("redis.host")
+	cfg.DiscordToken = viper.GetString("discord.token")
+	cfg.DiscordClientID = viper.GetString("discord.client_id")
+	cfg.DiscordClientSecret = viper.GetString("discord.client_secret")
+	cfg.DataPath = viper.GetString("data.path")
+	cfg.DiscordOwnerID = viper.GetString("discord.owner_id")
+
+	if cfg.DBDriver == "mysql" {
+		cfg.DBHost = fmt.Sprintf("tcp(%s:%s)", cfg.DBHost, cfg.DBPort)
+	} else if cfg.DBDriver == "postgres" {
+		cfg.DBHost = fmt.Sprintf("%s:%s", cfg.DBHost, cfg.DBPort)
+	}
+
+	config = cfg
+
+	go initDb()
 
 	return cfg
 }
@@ -59,14 +84,46 @@ type Sound struct {
 	FilePath string
 }
 
-func (sound *Sound) FilePath() string {
-	// TODO:
-	return sound.ID
+func initDb() {
+	db, err := getDB()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Fatal("Couldn't connect to DB")
+		return
+	}
+
+	primaryKeyType := "INTEGER PRIMARY KEY"
+	if config.DBDriver == "postgres" {
+		primaryKeyType = "SERIAL PRIMARY KEY"
+	}
+
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS sound (" +
+		"id " + primaryKeyType + "," +
+		"guildId VARCHAR(255)," +
+		"name VARCHAR(255)," +
+		"gif VARCHAR(255)," +
+		"weight INTEGER," +
+		"filepath VARCHAR(255)" +
+		")")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS command (" +
+		"id " + primaryKeyType + "," +
+		"command VARCHAR(255)," +
+		"guildId VARCHAR(255)," +
+		"soundId INTEGER," +
+		"FOREIGN KEY(soundId) REFERENCES sound(id) ON DELETE CASCADE" +
+		")")
+
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Warn("Error creating tables")
+	}
 }
 
 func buildSound(row *sql.Row) (*Sound, error) {
 	var sound Sound
-	if err := row.Scan(&sound.Name, &sound.Gif, &sound.Weight); err != nil {
+	if err := row.Scan(&sound.Name, &sound.Gif, &sound.Weight, &sound.FilePath); err != nil {
 		return nil, err
 	}
 	return &sound, nil
@@ -76,7 +133,7 @@ func buildSounds(db *sql.DB, rows *sql.Rows) ([]*Sound, error) {
 	var sounds []*Sound
 	for rows.Next() {
 		var sound Sound
-		if err := rows.Scan(&sound.ID, &sound.Name, &sound.Gif, &sound.Weight); err != nil {
+		if err := rows.Scan(&sound.ID, &sound.Name, &sound.Gif, &sound.Weight, &sound.FilePath); err != nil {
 			return nil, err
 		}
 
@@ -103,11 +160,26 @@ func buildSounds(db *sql.DB, rows *sql.Rows) ([]*Sound, error) {
 }
 
 func getDB() (*sql.DB, error) {
-	return sql.Open("", "")
+	connPrefix := ""
+	connSuffix := ""
+	if config.DBDriver == "postgres" {
+		connPrefix = "postgres://"
+
+		ssl := "sslmode="
+		if config.DBSSL {
+			connSuffix = ssl + "verify-full"
+		} else {
+			connSuffix = ssl + "disable"
+		}
+	}
+
+	connString := fmt.Sprintf("%s%s:%s@%s/%s?%s", connPrefix,
+		config.DBUser, config.DBPassword, config.DBHost, config.DBName, connSuffix)
+	return sql.Open(config.DBDriver, connString)
 }
 
-// SaveSound saves a sound to the db
-func SaveSound(gID int, s *Sound, commands []*string) error {
+// UpdateSound update a sound in DB
+func UpdateSound(gID string, sID string, s *Sound, commands []string) error {
 	db, err := getDB()
 	if err != nil {
 		return err
@@ -118,7 +190,50 @@ func SaveSound(gID int, s *Sound, commands []*string) error {
 		return err
 	}
 
-	res, err := tx.Exec("INSERT INTO sounds (guildID, name, gif, weight) VALUES ($1, $2, $3, $4)",
+	res, err := tx.Exec("INSERT INTO sound (guildID, name, gif, weight, filepath) VALUES ($1, $2, $3, $4, $5)",
+		gID,
+		s.Name,
+		s.Gif,
+		s.Weight)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	soundID := res.LastInsertId
+
+	_, err = tx.Exec("DELETE FROM command WHERE soundId = $1 AND guildId = $2")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	for command := range commands {
+		res, err = tx.Exec("INSERT INTO command (soundId, guildId, command) VALUES ($1, $2, $3)",
+			soundID,
+			gID,
+			command)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
+// SaveSound saves a sound to the db
+func SaveSound(gID string, s *Sound, commands []string) error {
+	db, err := getDB()
+	if err != nil {
+		return err
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	res, err := tx.Exec("INSERT INTO sound (guildID, name, gif, weight, filepath) VALUES ($1, $2, $3, $4, $5)",
 		gID,
 		s.Name,
 		s.Gif,
@@ -141,6 +256,17 @@ func SaveSound(gID int, s *Sound, commands []*string) error {
 	}
 
 	return tx.Commit()
+}
+
+func DeleteSound(gID string, sID string) error {
+	db, err := getDB()
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec("DELETE FRON sound WHERE id = $1 AND guildId = $2", sID, gID)
+
+	return err
 }
 
 // GetSoundsByCommand return all sounds for a given command
