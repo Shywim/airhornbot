@@ -53,7 +53,7 @@ var (
 
 	userAudioPath *string
 
-	plugins map[string]*airhornPlugin
+	plugins = make(map[string]*airhornPlugin)
 )
 
 type airhornPlugin struct {
@@ -669,7 +669,7 @@ func loadPlugins() {
 			}
 
 			plug := &airhornPlugin{
-				name:     name.(string),
+				name:     (*name.(*string)),
 				handle:   handleFunc.(func(string) bool),
 				getSound: getSoundFunc.(func(string) [][]byte),
 			}
