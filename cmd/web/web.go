@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -374,40 +373,8 @@ func handleManage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 				continue
 			}
 
-			r, err = conn.Do("GET", fmt.Sprintf("airhorn:guild:%s:plays", g.ID))
-			if r != nil || err != nil {
-				guild.Plays, err = redis.Int64(r, err)
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
-			}
-
-			r, err = conn.Do("KEYS", fmt.Sprintf("airhorn:guild:%s:sound:*", g.ID))
-			if r != nil || err != nil {
-				keys, err := redis.ByteSlices(r, err)
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
-
-				for _, key := range keys {
-					r, err = conn.Do("GET", key)
-
-					if r != nil || err != nil {
-						s, err := redis.Bytes(r, err)
-
-						if err != nil {
-							http.Error(w, err.Error(), http.StatusInternalServerError)
-							return
-						}
-
-						sound := common.Sound{}
-						json.Unmarshal(s, &sound)
-						guild.Sounds = append(guild.Sounds, &sound)
-					}
-				}
-			}
+			sounds, err := common.GetSoundsByGuild(g.ID)
+			guild.Sounds = append(guild.Sounds, sounds...)
 
 			adminGuilds = append(adminGuilds, guild)
 		}
@@ -445,6 +412,12 @@ func handleNewSound(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 	sndFile, sndFileH, err := r.FormFile("file")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	commands := r.MultipartForm.Value["command"][0]
+	if commands == "" {
+		http.Error(w, err.Error(), http.StatusNotAcceptable)
 		return
 	}
 
@@ -501,22 +474,12 @@ func handleNewSound(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 	}
 
 	sound := common.Sound{
-		ID:      soundID.String(),
-		Name:    r.MultipartForm.Value["name"][0],
-		Command: r.MultipartForm.Value["command"][0],
-		Weight:  weight,
+		Name:     r.MultipartForm.Value["name"][0],
+		Weight:   weight,
+		FilePath: soundID.String(),
 	}
 
-	serialized, err := json.Marshal(sound)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	conn := redisPool.Get()
-	defer conn.Close()
-
-	_, err = conn.Do("SET", fmt.Sprintf("airhorn:guild:%s:sound:%s", guildID, sound.ID), serialized)
+	err = common.SaveSound(guildID, &sound, strings.Split(commands, ","))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -601,6 +564,12 @@ func handleEditSound(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 	// parse form data
 	r.ParseMultipartForm(0)
 
+	commands := r.MultipartForm.Value["command"][0]
+	if commands == "" {
+		http.Error(w, err.Error(), http.StatusNotAcceptable)
+		return
+	}
+
 	weight, err := strconv.Atoi(r.MultipartForm.Value["weight"][0])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -608,22 +577,12 @@ func handleEditSound(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 	}
 
 	sound := common.Sound{
-		ID:      soundID,
-		Name:    r.MultipartForm.Value["name"][0],
-		Command: r.MultipartForm.Value["command"][0],
-		Weight:  weight,
+		ID:     soundID,
+		Name:   r.MultipartForm.Value["name"][0],
+		Weight: weight,
 	}
 
-	serialized, err := json.Marshal(sound)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	conn := redisPool.Get()
-	defer conn.Close()
-
-	_, err = conn.Do("SET", fmt.Sprintf("airhorn:guild:%s:sound:%s", guildID, soundID), serialized)
+	err = common.UpdateSound(guildID, soundID, &sound, strings.Split(commands, ","))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -652,11 +611,7 @@ func handleDeleteSound(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 		return
 	}
 
-	conn := redisPool.Get()
-	defer conn.Close()
-
-	// delete the sound, we don't care about the result
-	_, err = conn.Do("DEL", fmt.Sprintf("airhorn:guild:%s:sound:%s", guildID, soundID))
+	err = common.DeleteSound(guildID, soundID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -665,9 +620,7 @@ func handleDeleteSound(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 	w.WriteHeader(http.StatusOK)
 }
 
-type defaultHandler struct{}
-
-func (defaultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func defaultHandler(w http.ResponseWriter, r *http.Request) {
 	fileServer := http.FileServer(http.Dir("web-app/public"))
 
 	// golang use the old "application/x-javascript" by default, we override that
@@ -688,7 +641,7 @@ func server() {
 	server.POST("/manage/:guildId/new", handleNewSound)
 	server.PUT("/manage/:guildId/:soundId", handleEditSound)
 	server.DELETE("/manage/:guildId/:soundId", handleDeleteSound)
-	server.NotFound = defaultHandler{}
+	server.NotFound = defaultHandler
 
 	// Only add this route if we have stats to push (e.g. redis connection)
 	if es != nil {
@@ -769,22 +722,13 @@ func connectToRedis(connStr string) (err error) {
 }
 
 func main() {
-	var (
-		ClientID     = flag.String("i", "", "OAuth2 Client ID")
-		ClientSecret = flag.String("s", "", "OAtuh2 Client Secret")
-		DataPath     = flag.String("d", "", "User uploaded audio path")
-		Redis        = flag.String("r", "", "Redis Connection String")
-	)
-	flag.Parse()
+	cfg := common.LoadConfig()
 
-	if *DataPath == "" {
-		panic("A data directory must be passed!")
-	}
-	userAudioPath = DataPath
+	userAudioPath = &cfg.DataPath
 
-	if *Redis != "" {
+	if cfg.RedisHost != "" {
 		// First, open a redis connection we use for stats
-		if connectToRedis(*Redis) != nil {
+		if connectToRedis(cfg.RedisHost) != nil {
 			return
 		}
 		defer redisPool.Close()
@@ -803,7 +747,7 @@ func main() {
 	}
 
 	// Create a cookie store
-	store = sessions.NewCookieStore([]byte(*ClientSecret))
+	store = sessions.NewCookieStore([]byte(cfg.DiscordClientSecret))
 
 	// Setup the OAuth2 Configuration
 	endpoint := oauth2.Endpoint{
@@ -812,16 +756,16 @@ func main() {
 	}
 
 	botOAuthConf = &oauth2.Config{
-		ClientID:     *ClientID,
-		ClientSecret: *ClientSecret,
+		ClientID:     cfg.DiscordClientID,
+		ClientSecret: cfg.DiscordClientSecret,
 		Scopes:       []string{"bot", "identify", "guilds"},
 		Endpoint:     endpoint,
 		RedirectURL:  "http://airhorn.shywim.fr/callback",
 	}
 
 	manageOAuthConf = &oauth2.Config{
-		ClientID:     *ClientID,
-		ClientSecret: *ClientSecret,
+		ClientID:     cfg.DiscordClientID,
+		ClientSecret: cfg.DiscordClientSecret,
 		Scopes:       []string{"identify", "guilds"},
 		Endpoint:     endpoint,
 		RedirectURL:  "http://airhorn.shywim.fr/callback",

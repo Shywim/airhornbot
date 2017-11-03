@@ -10,6 +10,7 @@ node_modules
 airhornbot
 airhornweb
 vendor/
+config/config.toml
 
 web-app/public/js
 web-app/public/css

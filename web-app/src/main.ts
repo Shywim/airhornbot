@@ -131,6 +131,9 @@
     const editSoundModalFile: HTMLElement = document.getElementById('edit-sound-file')
     const editSoundModalCancel: HTMLElement = editSoundModal.getElementsByTagName('button')[0]
 
+    const circleContainer: HTMLElement = document.getElementsByClassName('circle-container')[0] as HTMLElement
+    const circleReveal: HTMLElement = document.getElementsByClassName('circle-reveal')[0] as HTMLElement
+
     /**
      * Switch between home and manage section
      * @param show
@@ -278,15 +281,20 @@
     const boringTb: HTMLTableSectionElement = boringTable.getElementsByTagName('tbody')[0]
 
     const rowClick = (guild: Guild, i) => {
-      if (manageState.extendedRow > -1) {
-        // delete row if a details row exists
-        airhornTb.deleteRow(i + 1)
-      }
       if (manageState.extendedRow === i) {
         // juste close if the same row was clicked
+        circleReveal.classList.remove('expand')
+        circleReveal.style.width = '0'
+        circleReveal.style.height = '0'
+        setTimeout(() => {
+          airhornTb.rows.item(i).classList.remove('selected')
+          airhornTb.deleteRow(i + 1)
+        }, 330)
         manageState.extendedRow = -1
         return
       }
+
+      const oldRow = manageState.extendedRow
       manageState.extendedRow = i
 
       const detailsRow: HTMLTableRowElement = airhornTb.insertRow(i + 1)
@@ -363,7 +371,38 @@
       })
 
       cell.appendChild(button)
-      cell.appendChild(collectionTable)
+
+      circleReveal.classList.remove('expand')
+      circleReveal.style.width = '0'
+      circleReveal.style.height = '0'
+      setTimeout(() => {
+        if (oldRow > -1) {
+          // delete row if a details row exists
+          airhornTb.deleteRow(oldRow + 1)
+        }
+        // remove hover effect from bulma
+        airhornTb.rows.item(i).classList.add('selected')
+        airhornTb.rows.item(i + 1).classList.add('selected')
+
+        cell.appendChild(collectionTable)
+        setTimeout(() => {
+          // reenable bulma's hover on previously selected row
+          if (oldRow > -1) {
+            airhornTb.rows.item(oldRow).classList.remove('selected')
+          }
+          // set the circle reveal animation size
+          const cellPos: ClientRect = cell.getBoundingClientRect()
+          circleContainer.style.top = `${cellPos.top - 100}px`
+          circleContainer.style.left = `${cellPos.left}px`
+          const cellHeight = cell.offsetHeight + 100
+          circleContainer.style.height = `${cellHeight}px`
+          circleContainer.style.width = `${cell.offsetWidth}px`
+          const circleSize = 2 * (cell.offsetWidth > cellHeight ? cell.offsetWidth : cellHeight)
+          circleReveal.classList.add('expand')
+          circleReveal.style.width = `${circleSize}px`
+          circleReveal.style.height = `${circleSize}px`
+        }, 330)
+      }, 330)
     }
 
     const updateLayout = () => {
@@ -424,4 +463,15 @@
     // finally display data when the request is finished
     guildsRequest.then(updateLayout)
   })()
+
+  function ListItem() {
+    const view = document.createElement('div')
+    view.className = 'list-item'
+    return view
+  }
+
+  function GuildItem() {
+    const view = ListItem()
+
+  }
 })()
