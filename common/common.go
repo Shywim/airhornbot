@@ -6,11 +6,14 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/garyburd/redigo/redis"
+	// mysql driver, used via database/sql
 	_ "github.com/go-sql-driver/mysql"
+	// postgresql driver, used via database/sql
 	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
 )
 
+// Cfg represents the app configuration
 type Cfg struct {
 	DBDriver            string
 	DBSSL               bool
@@ -29,6 +32,7 @@ type Cfg struct {
 
 var config *Cfg
 
+// LoadConfig read configuration from disk
 func LoadConfig() *Cfg {
 	viper.SetConfigName("config")
 	viper.AddConfigPath("config")
@@ -51,7 +55,7 @@ func LoadConfig() *Cfg {
 	cfg.DiscordToken = viper.GetString("discord.token")
 	cfg.DiscordClientID = viper.GetString("discord.client_id")
 	cfg.DiscordClientSecret = viper.GetString("discord.client_secret")
-	cfg.DataPath = viper.GetString("data.path")
+	cfg.DataPath = viper.GetString("data.data_path")
 	cfg.DiscordOwnerID = viper.GetString("discord.owner_id")
 
 	if cfg.DBDriver == "mysql" {
@@ -123,9 +127,12 @@ func initDb() {
 
 func buildSound(row *sql.Row) (*Sound, error) {
 	var sound Sound
-	if err := row.Scan(&sound.Name, &sound.Gif, &sound.Weight, &sound.FilePath); err != nil {
+	var gif sql.NullString // gif can be null
+	if err := row.Scan(&sound.ID, &sound.Name, &gif, &sound.Weight, &sound.FilePath); err != nil {
 		return nil, err
 	}
+
+	sound.Gif = gif.String
 	return &sound, nil
 }
 
@@ -258,7 +265,9 @@ func SaveSound(gID string, s *Sound, commands []string) error {
 	return tx.Commit()
 }
 
+// DeleteSound delete a sound from the DB
 func DeleteSound(gID string, sID string) error {
+	// TODO: delete also the sound file?
 	db, err := getDB()
 	if err != nil {
 		return err
@@ -288,7 +297,7 @@ func GetSoundsByCommand(command, guildID string) ([]*Sound, error) {
 			return nil, err
 		}
 
-		row := db.QueryRow("SELECT * FROM sound WHERE id = $1", soundID)
+		row := db.QueryRow("SELECT id, name, gif, weight, filepath FROM sound WHERE id = $1", soundID)
 		if err != nil {
 			return nil, err
 		}
@@ -345,6 +354,7 @@ func UtilGetRedisValuesFor(redisPool *redis.Pool, keys []string) (r []interface{
 	return r, nil
 }
 
+// DefaultSounds are a set of default sounds available to every servers
 var DefaultSounds = []*Sound{
 	&Sound{
 		Name:     "airhorn_default",

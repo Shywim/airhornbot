@@ -51,6 +51,7 @@ var (
 	userAudioPath *string
 
 	plugins = make(map[string]*airhornPlugin)
+	cfg *common.Cfg
 )
 
 type airhornPlugin struct {
@@ -157,8 +158,8 @@ func loadSound(s *common.Sound) (buffer [][]byte, err error) {
 	if strings.HasPrefix(s.FilePath, "@plugin/") {
 		return loadSoundFromPlugin(strings.TrimPrefix(s.FilePath, "@plugin/"), s.Name)
 	}
-
-	file, err := os.Open(s.FilePath)
+	
+	file, err := os.Open(cfg.DataPath + string(os.PathSeparator) + s.FilePath)
 	if err != nil {
 		return nil, err
 	}
@@ -660,7 +661,7 @@ func loadPlugins() {
 }
 
 func main() {
-	cfg := common.LoadConfig()
+	cfg = common.LoadConfig()
 
 	loadPlugins()
 

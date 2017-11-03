@@ -1,0 +1,19 @@
+[database]
+driver = "mysql"
+host = "localhost"
+port = 3306
+user = "root"
+password = ""
+name = "airhorn"
+ssl = false
+
+[redis]
+host = "localhost:6379"
+
+[discord]
+token = ""
+owner_id = ""
+
+[data]
+data_path = "data"
+plugins_path = "plugins"
