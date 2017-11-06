@@ -27,6 +27,7 @@ type Cfg struct {
 	DiscordClientID     string
 	DiscordClientSecret string
 	DataPath            string
+	PluginPath          string
 	DiscordOwnerID      string
 }
 
@@ -56,6 +57,7 @@ func LoadConfig() *Cfg {
 	cfg.DiscordClientID = viper.GetString("discord.client_id")
 	cfg.DiscordClientSecret = viper.GetString("discord.client_secret")
 	cfg.DataPath = viper.GetString("data.data_path")
+	cfg.PluginPath = viper.GetString("data.plugins_path")
 	cfg.DiscordOwnerID = viper.GetString("discord.owner_id")
 
 	if cfg.DBDriver == "mysql" {

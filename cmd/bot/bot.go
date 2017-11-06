@@ -25,10 +25,6 @@ import (
 	"github.com/shywim/airhornbot/common"
 )
 
-const (
-	pluginsDir = "./plugins/"
-)
-
 var (
 	// discordgo session
 	discord *discordgo.Session
@@ -50,8 +46,10 @@ var (
 
 	userAudioPath *string
 
+	pluginsPath *string
+
 	plugins = make(map[string]*airhornPlugin)
-	cfg *common.Cfg
+	cfg     *common.Cfg
 )
 
 type airhornPlugin struct {
@@ -158,7 +156,7 @@ func loadSound(s *common.Sound) (buffer [][]byte, err error) {
 	if strings.HasPrefix(s.FilePath, "@plugin/") {
 		return loadSoundFromPlugin(strings.TrimPrefix(s.FilePath, "@plugin/"), s.Name)
 	}
-	
+
 	file, err := os.Open(cfg.DataPath + string(os.PathSeparator) + s.FilePath)
 	if err != nil {
 		return nil, err
@@ -603,7 +601,7 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func loadPlugins() {
-	files, err := ioutil.ReadDir(pluginsDir)
+	files, err := ioutil.ReadDir(*pluginsPath)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
@@ -613,7 +611,7 @@ func loadPlugins() {
 
 	for _, file := range files {
 		if !file.IsDir() && strings.Contains(file.Name(), ".so") {
-			p, err := plugin.Open(pluginsDir + file.Name())
+			p, err := plugin.Open(*pluginsPath + file.Name())
 			if err != nil {
 				log.WithFields(log.Fields{
 					"error":  err,
@@ -666,6 +664,7 @@ func main() {
 	loadPlugins()
 
 	userAudioPath = &cfg.DataPath
+	pluginsPath = &cfg.PluginPath
 
 	// connect to redis
 	log.Info("Connecting to redis...")
