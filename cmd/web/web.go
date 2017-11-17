@@ -12,9 +12,8 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"time"
-
 	"strings"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/antage/eventsource"
@@ -24,8 +23,9 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/jonas747/dca"
 	"github.com/julienschmidt/httprouter"
-	uuid "github.com/satori/go.uuid"
-	"github.com/shywim/airhornbot/common"
+	"github.com/satori/go.uuid"
+	"github.com/shywim/airhornbot/service"
+	"github.com/shywim/airhornbot/web"
 	"golang.org/x/oauth2"
 )
 
@@ -58,28 +58,15 @@ var (
 	userAudioPath *string
 )
 
-// Represents a JSON struct of stats that are updated every second and pushed to the client
-type countUpdate struct {
-	Total          string `json:"total"`
-	UniqueUsers    string `json:"unique_users"`
-	UniqueGuilds   string `json:"unique_guilds"`
-	UniqueChannels string `json:"unique_channels"`
-}
-
 type guildInfo struct {
 	ID     string          `json:"id"`
 	Name   string          `json:"name"`
 	Plays  int64           `json:"plays"`
-	Sounds []*common.Sound `json:"sounds"`
+	Sounds []*service.Sound `json:"sounds"`
 	Icon   string          `json:"icon"`
 }
 
-func (c *countUpdate) ToJSON() []byte {
-	data, _ := json.Marshal(c)
-	return data
-}
-
-func newCountUpdate() *countUpdate {
+func newCountUpdate() *service.CountUpdate {
 	var (
 		total  int64
 		users  int64
@@ -130,7 +117,7 @@ func newCountUpdate() *countUpdate {
 		}
 	}
 
-	return &countUpdate{
+	return &service.CountUpdate{
 		Total:          strconv.FormatInt(total, 10),
 		UniqueUsers:    strconv.FormatInt(users, 10),
 		UniqueGuilds:   strconv.FormatInt(guilds, 10),
@@ -208,7 +195,7 @@ func verifyAndOpenSession(w http.ResponseWriter, r *http.Request, s *sessions.Se
 	}
 
 	req.Header.Set("Authorization", token.Type()+" "+token.AccessToken)
-	client := &http.Client{Timeout: (20 * time.Second)}
+	client := &http.Client{Timeout: 20 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -273,7 +260,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 
 	guildID := r.URL.Query()["guild_id"]
-	opts := []oauth2.AuthCodeOption{}
+	var opts []oauth2.AuthCodeOption
 	opts = append(opts, oauth2.AccessTypeOnline)
 	if guildID != nil {
 		guildIDParam := oauth2.SetAuthURLParam("guild_id", guildID[0])
@@ -358,7 +345,7 @@ func handleManage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			ID:     g.ID,
 			Name:   g.Name,
 			Icon:   "https://cdn.discordapp.com/icons/" + g.ID + "/" + g.Icon + ".png",
-			Sounds: []*common.Sound{},
+			Sounds: []*service.Sound{},
 		}
 
 		if g.Permissions&permAdministrator != 0 {
@@ -373,7 +360,7 @@ func handleManage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 				continue
 			}
 
-			sounds, err := common.GetSoundsByGuild(g.ID)
+			sounds, err := service.GetSoundsByGuild(g.ID)
 			guild.Sounds = append(guild.Sounds, sounds...)
 
 			adminGuilds = append(adminGuilds, guild)
@@ -473,13 +460,13 @@ func handleNewSound(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 		return
 	}
 
-	sound := common.Sound{
+	sound := service.Sound{
 		Name:     r.MultipartForm.Value["name"][0],
 		Weight:   weight,
 		FilePath: soundID.String(),
 	}
 
-	err = common.SaveSound(guildID, &sound, strings.Split(commands, ","))
+	err = service.SaveSound(guildID, &sound, strings.Split(commands, ","))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -505,7 +492,7 @@ func checkIsGuildAdmin(guildID, token string) (bool, error) {
 
 	guild := findGuild(guilds, guildID)
 	if guild == nil {
-		return false, errors.New("Not a user of guild")
+		return false, errors.New("not a user of guild")
 	}
 
 	return guild.Permissions&permAdministrator != 0, nil
@@ -576,13 +563,13 @@ func handleEditSound(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 		return
 	}
 
-	sound := common.Sound{
+	sound := service.Sound{
 		ID:     soundID,
 		Name:   r.MultipartForm.Value["name"][0],
 		Weight: weight,
 	}
 
-	err = common.UpdateSound(guildID, soundID, &sound, strings.Split(commands, ","))
+	err = service.UpdateSound(guildID, soundID, &sound, strings.Split(commands, ","))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -611,7 +598,7 @@ func handleDeleteSound(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 		return
 	}
 
-	err = common.DeleteSound(guildID, soundID)
+	err = service.DeleteSound(guildID, soundID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -621,7 +608,7 @@ func handleDeleteSound(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 }
 
 func defaultHandler(w http.ResponseWriter, r *http.Request) {
-	fileServer := http.FileServer(http.Dir("web-app/public"))
+	fileServer := http.FileServer(http.Dir("public"))
 
 	// golang use the old "application/x-javascript" by default, we override that
 	if strings.HasSuffix(r.URL.String(), ".js") {
@@ -632,8 +619,23 @@ func defaultHandler(w http.ResponseWriter, r *http.Request) {
 	fileServer.ServeHTTP(w, r)
 }
 
+func getContext(r *http.Request) web.TemplateContext {
+	return web.TemplateContext{
+		SiteURL: "http://"+r.Host,
+		StatsCounter: *newCountUpdate(),
+	}
+}
+func index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	tmplCtx := getContext(r)
+	tmplData := web.TemplateData{
+		Context: tmplCtx,
+	}
+	web.RenderTemplate(w, "home.gohtml", tmplData)
+}
+
 func server() {
 	server := httprouter.New()
+	server.GET("/", index)
 	server.GET("/me", handleMe)
 	server.GET("/login", handleLogin)
 	server.GET("/callback", handleCallback)
@@ -641,12 +643,13 @@ func server() {
 	server.POST("/manage/:guildId/new", handleNewSound)
 	server.PUT("/manage/:guildId/:soundId", handleEditSound)
 	server.DELETE("/manage/:guildId/:soundId", handleDeleteSound)
-	server.NotFound = defaultHandler
 
 	// Only add this route if we have stats to push (e.g. redis connection)
 	if es != nil {
 		server.Handler("GET", "/events", es)
 	}
+
+	server.NotFound = defaultHandler
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -680,7 +683,7 @@ func server() {
 func broadcastLoop() {
 	var id int
 	for {
-		time.Sleep(time.Second * 1)
+		time.Sleep(time.Second * 5)
 
 		es.SendEventMessage(string(newCountUpdate().ToJSON()), "message", strconv.Itoa(id))
 		id++
@@ -722,7 +725,12 @@ func connectToRedis(connStr string) (err error) {
 }
 
 func main() {
-	cfg := common.LoadConfig()
+	cfg, err := service.LoadConfig()
+	if err != nil {
+		log.WithError(err).Fatal("Could not load the configuration file")
+	}
+
+	web.LoadTemplates("templates")
 
 	userAudioPath = &cfg.DataPath
 

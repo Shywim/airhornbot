@@ -1,0 +1,60 @@
+{{ template "head.gohtml" .Context }}
+<div class="section manage-section" id="manage-section">
+  <div class="container">
+    <div class="level">
+      <div class="level-left">
+        <div class="level-item">
+          <h1 class="title is-2">Manage my !airhorn</h1>
+        </div>
+      </div>
+      <div class="level-right">
+        <div class="level-item">
+          <a class="back-home" href="{{ .Context.SiteURL }}/">Back</a>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="title is-3">Guilds with !airhorn</h2>
+    <table id="airhorn-guilds" class="table guild-list">
+      <thead>
+      <tr>
+        <th></th>
+        <th>Guild name</th>
+        <th>Custom sounds</th>
+        <th>Plays</th>
+      </tr>
+      </thead>
+      <tbody>
+      {{ range _, $g := .AirhornGuilds }}
+      <tr>
+        <td><img src="{{ $g.Icon }}" class="guild-logo"></td>
+        <td><b>{{ $g.Name }}</b></td>
+        <td>{{ $g.SoundsCount }}</td>
+        <td>{{ $g.Plays }}</td>
+      </tr>
+      {{ end }}
+      </tbody>
+    </table>
+
+    <h2 class="title is-3">Boring guilds</h2>
+    <table id="boring-guilds" class="table guild-list">
+      <thead>
+      <tr>
+        <th></th>
+        <th>Guild name</th>
+        <th></th>
+      </tr>
+      </thead>
+      <tbody>
+      {{ range _, $g := .BoringGuilds }}
+      <tr>
+        <td><img src="{{ $g.Icon }}" class="guild-logo"></td>
+        <td><b>{{ $g.Name }}</b></td>
+        <td><a href="{{ .Context.SiteURL }}/login?guild_id={{ $g.ID }}" class="button">Login &gt;</a></td>
+      </tr>
+      {{ end }}
+      </tbody>
+    </table>
+  </div>
+</div>
+{{ template "footer.gohtml" .Context }}

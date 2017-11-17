@@ -51,7 +51,7 @@ func AirhornBot() error {
 
 // Build the server binary and the web application
 func AirhornWeb() error {
-	mg.Deps(Vendor, WebApp)
+	mg.Deps(Vendor)
 	return sh.Run(goexe, "build", "-o", webBinary, webPackage)
 }
 

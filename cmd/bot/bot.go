@@ -22,7 +22,7 @@ import (
 	"github.com/garyburd/redigo/redis"
 	"github.com/jonas747/dca"
 	"github.com/orcaman/concurrent-map"
-	"github.com/shywim/airhornbot/common"
+	"github.com/shywim/airhornbot/service"
 )
 
 var (
@@ -49,7 +49,7 @@ var (
 	pluginsPath *string
 
 	plugins = make(map[string]*airhornPlugin)
-	cfg     *common.Cfg
+	cfg     *service.Cfg
 )
 
 type airhornPlugin struct {
@@ -63,7 +63,7 @@ type Play struct {
 	GuildID   string
 	ChannelID string
 	UserID    string
-	Sound     *common.Sound
+	Sound     *service.Sound
 
 	// The next play to occur after this, only used for chaining sounds like anotha
 	Next *Play
@@ -73,15 +73,15 @@ type Play struct {
 }
 
 // Create a Sound struct
-func createSound(Name string, Weight int, Gif string) *common.Sound {
-	return &common.Sound{
+func createSound(Name string, Weight int, Gif string) *service.Sound {
+	return &service.Sound{
 		Name:   Name,
 		Gif:    Gif,
 		Weight: Weight,
 	}
 }
 
-func random(s []*common.Sound) *common.Sound {
+func random(s []*service.Sound) *service.Sound {
 	var (
 		i     int
 		total int
@@ -152,7 +152,7 @@ func loadSoundFromPlugin(pluginName, name string) (buffer [][]byte, err error) {
 	return soundData, nil
 }
 
-func loadSound(s *common.Sound) (buffer [][]byte, err error) {
+func loadSound(s *service.Sound) (buffer [][]byte, err error) {
 	if strings.HasPrefix(s.FilePath, "@plugin/") {
 		return loadSoundFromPlugin(strings.TrimPrefix(s.FilePath, "@plugin/"), s.Name)
 	}
@@ -189,7 +189,7 @@ func doPlay(soundData [][]byte, vc *discordgo.VoiceConnection) {
 }
 
 // Prepares a play
-func createPlay(user *discordgo.User, guild *discordgo.Guild, coll []*common.Sound) *Play {
+func createPlay(user *discordgo.User, guild *discordgo.Guild, coll []*service.Sound) *Play {
 	// Grab the users voice channel
 	channel := getCurrentVoiceChannel(user, guild)
 	if channel == nil {
@@ -214,7 +214,7 @@ func createPlay(user *discordgo.User, guild *discordgo.Guild, coll []*common.Sou
 }
 
 // Prepares and enqueues a play into the ratelimit/buffer guild queue
-func enqueuePlay(user *discordgo.User, guild *discordgo.Guild, sounds []*common.Sound, cid string) {
+func enqueuePlay(user *discordgo.User, guild *discordgo.Guild, sounds []*service.Sound, cid string) {
 	play := createPlay(user, guild, sounds)
 	if play == nil {
 		return
@@ -409,7 +409,7 @@ func displayBotStats(cid string) {
 func utilSumRedisKeys(keys []string) (int, error) {
 	var total int64
 
-	values, err := common.UtilGetRedisValuesFor(redisPool, keys)
+	values, err := service.UtilGetRedisValuesFor(redisPool, keys)
 	if err != nil {
 		return 0, err
 	}
@@ -471,7 +471,7 @@ func airhornBomb(cid string, guild *discordgo.Guild, user *discordgo.User, cs st
 		return
 	}
 
-	airhornSounds := common.FilterByCommand("airhorn", common.DefaultSounds)
+	airhornSounds := service.FilterByCommand("airhorn", service.DefaultSounds)
 
 	play := createPlay(user, guild, airhornSounds)
 	vc, err := voiceConnect(play.GuildID, play.ChannelID)
@@ -510,10 +510,10 @@ func handleMentionMessages(s *discordgo.Session, m *discordgo.MessageCreate, par
 	}
 }
 
-func findPluginForSound(name string) (sounds []*common.Sound) {
+func findPluginForSound(name string) (sounds []*service.Sound) {
 	for _, p := range plugins {
 		if p.handle(name) {
-			sound := &common.Sound{
+			sound := &service.Sound{
 				FilePath: "@plugin/" + p.name,
 				Name:     name,
 				Weight:   1,
@@ -580,8 +580,8 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	command := strings.TrimPrefix(parts[0], "!")
 
 	// filter default sounds
-	sounds := common.FilterByCommand(command, common.DefaultSounds)
-	guildSounds, err := common.GetSoundsByCommand(command, channel.GuildID)
+	sounds := service.FilterByCommand(command, service.DefaultSounds)
+	guildSounds, err := service.GetSoundsByCommand(command, channel.GuildID)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
@@ -659,7 +659,7 @@ func loadPlugins() {
 }
 
 func main() {
-	cfg = common.LoadConfig()
+	cfg = service.LoadConfig()
 
 	loadPlugins()
 
