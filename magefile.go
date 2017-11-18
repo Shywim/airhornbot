@@ -11,11 +11,11 @@ import (
 )
 
 const (
-	basePackage = "github.com/shywim/airhornbot"
-	botPackage = basePackage + "/cmd/bot"
-	botBinary = "airhornbot"
-	webPackage = basePackage + "/cmd/web"
-	webBinary = "airhornweb"
+	basePackage = "github.com/Shywim/airhornbot"
+	botPackage  = basePackage + "/cmd/bot"
+	botBinary   = "airhornbot"
+	webPackage  = basePackage + "/cmd/web"
+	webBinary   = "airhornweb"
 )
 
 var goexe = "go"

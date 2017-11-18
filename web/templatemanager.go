@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"github.com/Shywim/airhornbot/service"
 	log "github.com/Sirupsen/logrus"
 	"github.com/oxtoacart/bpool"
-	"github.com/shywim/airhornbot/service"
 )
 
 var (
@@ -20,14 +20,21 @@ func init() {
 	log.Println("buffer allocation successful")
 }
 
-// Data in TemplateContext is used in every templates
+// TemplateContext data is used in every templates
 type TemplateContext struct {
-	NoRedis bool
-	SiteURL string
+	NoRedis      bool
+	SiteURL      string
 	StatsCounter service.CountUpdate
 }
 
-// Used to store data to use in a template
+func getContext(r *http.Request) TemplateContext {
+	return TemplateContext{
+		SiteURL:      "http://" + r.Host,
+		StatsCounter: *service.GetStats(),
+	}
+}
+
+// TemplateData is used to store data to use in a template
 type TemplateData struct {
 	Context TemplateContext
 	Data    interface{}
@@ -59,8 +66,7 @@ func LoadTemplates(templatesPath string) {
 	}
 }
 
-// RenderTemplate with utf-8 encoding
-func RenderTemplate(w http.ResponseWriter, name string, data TemplateData) {
+func renderTemplate(w http.ResponseWriter, name string, data TemplateData) {
 	tmpl, ok := templates[name]
 	if !ok {
 		log.WithFields(log.Fields{

@@ -24,20 +24,20 @@ type Cfg struct {
 	DiscordOwnerID      string
 }
 
-var config *Cfg
+var config Cfg
 
 // LoadConfig read configuration from disk
-func LoadConfig() (*Cfg, error) {
+func LoadConfig() (Cfg, error) {
 	viper.SetConfigName("config")
 	viper.AddConfigPath("config")
 	viper.AddConfigPath("/etc/airhornbot")
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		return nil, err
+		return Cfg{}, err
 	}
 
-	cfg := &Cfg{}
+	cfg := Cfg{}
 	cfg.DBDriver = viper.GetString("database.driver")
 	cfg.DBSSL = viper.GetBool("database.ssl")
 	cfg.DBHost = viper.GetString("database.host")
