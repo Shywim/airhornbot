@@ -31,6 +31,28 @@ func AddGuild(gID string) error {
 	return err
 }
 
+func GetGuildWithSounds(session *discordgo.Session, gID string) (Guild, error) {
+	g, err := session.Guild(gID)
+	if err != nil {
+		return Guild{}, err
+	}
+
+	guild := Guild{
+		ID:   g.ID,
+		Name: g.Name,
+		Icon: fmt.Sprintf("https://cdn.discordapp.com/icons/%v/%v.png",
+			g.ID, g.Icon),
+	}
+
+	sounds, err := GetSoundsByGuild(g.ID)
+	if err != nil {
+		return Guild{}, err
+	}
+	guild.Sounds = sounds
+
+	return guild, nil
+}
+
 func GetGuildsWithSounds(session *discordgo.Session) (interface{}, error) {
 	guilds, err := session.UserGuilds(100, "", "")
 	if err != nil {
@@ -60,7 +82,7 @@ func GetGuildsWithSounds(session *discordgo.Session) (interface{}, error) {
 			}
 
 			sounds, err := GetSoundsByGuild(g.ID)
-			guild.Sounds = append(guild.Sounds, sounds...)
+			guild.Sounds = sounds
 
 			airhornGuilds = append(airhornGuilds, guild)
 		}

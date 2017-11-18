@@ -107,3 +107,27 @@ func ManageRoute(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 	renderTemplate(w, "manage.gohtml", tmplData)
 }
+
+// ManageGuildRoute serves manage.gohtml
+func ManageGuildRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	token := getDiscordToken(r)
+	if token == "" {
+		AskLoginRoute(w, r, nil)
+		return
+	}
+
+	session := GetDiscordSession(token)
+	guild, err := service.GetGuildWithSounds(session, ps.ByName("guildID"))
+	if err != nil {
+		// TODO: error
+		log.WithError(err).Error("Error retrieving user's guild")
+		return
+	}
+
+	tmplCtx := getContext(r)
+	tmplData := TemplateData{
+		Context: tmplCtx,
+		Data:    guild,
+	}
+	renderTemplate(w, "guild.gohtml", tmplData)
+}

@@ -20,6 +20,15 @@ body {
     background: #fff;
 }
 
+.header {
+	display: flex;
+	flex-direction: row;
+}
+
+.header .title {
+	font-size: 1.2 rem;
+}
+
 .table,
 .section {
     background: none;
@@ -75,6 +84,8 @@ body {
 
 img.guild-logo {
     border-radius: 50%;
+	width: 80px;
+	height: 80px;
 }
 
 .heading {

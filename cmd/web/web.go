@@ -291,7 +291,7 @@ func server() {
 	server.GET("/login", web.LoginRoute)
 	server.GET("/callback", web.CallbackRoute)
 	server.GET("/manage", web.ManageRoute)
-	server.POST("/manage/:guildId/new", handleNewSound)
+	server.GET("/manage/:guildID", web.ManageGuildRoute)
 	server.PUT("/manage/:guildId/:soundId", handleEditSound)
 	server.DELETE("/manage/:guildId/:soundId", handleDeleteSound)
 
