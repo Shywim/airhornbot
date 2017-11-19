@@ -48,11 +48,10 @@ func newCountUpdate() *service.CountUpdate {
 	return service.GetStats()
 }
 
-func handleNewSound(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func handleEditSound(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	session, _ := store.Get(r, "session")
 	guildID := ps.ByName("guildId")
 	token := session.Values["token"]
-	soundID := uuid.NewV4()
 
 	hasPerm, err := checkIsGuildAdmin(guildID, string(token.(string)))
 	if err != nil {
@@ -69,6 +68,13 @@ func handleNewSound(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 	}
 
 	r.ParseMultipartForm(0)
+
+	weight, err := strconv.Atoi(r.MultipartForm.Value["weight"][0])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	sndFile, sndFileH, err := r.FormFile("file")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -81,68 +87,78 @@ func handleNewSound(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 		return
 	}
 
-	// read file size
-	var sndFileSize int64
-	switch t := sndFile.(type) {
-	case *os.File:
-		sndFileInfo, err := t.Stat()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+	soundID := ps.ByName("soundID")
+	if soundID == "new" {
+		soundID = uuid.NewV4().String()
+		// read file size
+		var sndFileSize int64
+		switch t := sndFile.(type) {
+		case *os.File:
+			sndFileInfo, err := t.Stat()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			sndFileSize = sndFileInfo.Size()
+			break
+		default:
+			sndFileSize, err = sndFile.Seek(0, 0)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			break
 		}
-		sndFileSize = sndFileInfo.Size()
-		break
-	default:
-		sndFileSize, err = sndFile.Seek(0, 0)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		break
-	}
 
-	// check file > 200kB
-	if sndFileSize > 200000 {
-		http.Error(w, "File too large", http.StatusNotAcceptable)
-		return
-	}
+		// check file > 200kB
+		if sndFileSize > 200000 {
+			http.Error(w, "File too large", http.StatusNotAcceptable)
+			return
+		}
 
-	var dcaData io.Reader
-	if !strings.HasSuffix(sndFileH.Filename, ".dca") {
-		// convert file if (presumably) not a dca file
-		dcaSession, err := dca.EncodeMem(sndFile, dca.StdEncodeOptions)
-		defer dcaSession.Cleanup()
+		var dcaData io.Reader
+		if !strings.HasSuffix(sndFileH.Filename, ".dca") {
+			// convert file if (presumably) not a dca file
+			dcaSession, err := dca.EncodeMem(sndFile, dca.StdEncodeOptions)
+			defer dcaSession.Cleanup()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			dcaData = dcaSession
+		} else {
+			dcaData = sndFile
+		}
+
+		err = saveAudio(dcaData, soundID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		dcaData = dcaSession
+
+		sound := service.Sound{
+			Name:     r.MultipartForm.Value["name"][0],
+			Weight:   weight,
+			FilePath: soundID,
+		}
+
+		err = service.SaveSound(guildID, &sound, strings.Split(commands, ","))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	} else {
-		dcaData = sndFile
-	}
+		sound := service.Sound{
+			Name:     r.MultipartForm.Value["name"][0],
+			Weight:   weight,
+			FilePath: soundID,
+		}
 
-	err = saveAudio(dcaData, soundID.String())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	weight, err := strconv.Atoi(r.MultipartForm.Value["weight"][0])
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	sound := service.Sound{
-		Name:     r.MultipartForm.Value["name"][0],
-		Weight:   weight,
-		FilePath: soundID.String(),
-	}
-
-	err = service.SaveSound(guildID, &sound, strings.Split(commands, ","))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		err = service.UpdateSound(guildID, soundID, &sound, strings.Split(commands, ","))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -194,56 +210,6 @@ func saveAudio(a io.Reader, n string) error {
 	return nil
 }
 
-func handleEditSound(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	guildID := ps.ByName("guildId")
-	soundID := ps.ByName("soundId")
-	session, _ := store.Get(r, "session")
-	token := session.Values["token"]
-
-	isAdmin, err := checkIsGuildAdmin(guildID, string(token.(string)))
-	if err != nil {
-		if strings.HasPrefix(err.Error(), "HTTP 401") {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if isAdmin == false {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	// parse form data
-	r.ParseMultipartForm(0)
-
-	commands := r.MultipartForm.Value["command"][0]
-	if commands == "" {
-		http.Error(w, err.Error(), http.StatusNotAcceptable)
-		return
-	}
-
-	weight, err := strconv.Atoi(r.MultipartForm.Value["weight"][0])
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	sound := service.Sound{
-		ID:     soundID,
-		Name:   r.MultipartForm.Value["name"][0],
-		Weight: weight,
-	}
-
-	err = service.UpdateSound(guildID, soundID, &sound, strings.Split(commands, ","))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-}
-
 func handleDeleteSound(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	guildID := ps.ByName("guildId")
 	soundID := ps.ByName("soundId")
@@ -292,7 +258,8 @@ func server() {
 	server.GET("/callback", web.CallbackRoute)
 	server.GET("/manage", web.ManageRoute)
 	server.GET("/manage/:guildID", web.ManageGuildRoute)
-	server.PUT("/manage/:guildId/:soundId", handleEditSound)
+	server.GET("/manage/:guildId/sound/:soundId", web.EditSoundRoute)
+	server.POST("/manage/:guildId/sound/:soundId", handleEditSound)
 	server.DELETE("/manage/:guildId/:soundId", handleDeleteSound)
 
 	// Only add this route if we have stats to push (e.g. redis connection)

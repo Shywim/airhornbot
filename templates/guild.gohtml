@@ -3,8 +3,10 @@
   <div class="header">
     <img class="guild-logo" src="{{ .Data.Icon }}">
     <h2>Managing {{ .Data.Name }} sounds</h2>
+    <a class="back" href="{{ .Context.SiteURL }}/manage/{{ .Data.ID }}">Back</a>
   </div>
 
+  <a class="button" href="{{ .Context.SiteURL }}/manage/{{ .Data.ID}}/sound/new">Add sound</a>
   <table>
   <thead>
 	<tr>
@@ -15,11 +17,12 @@
   </thead>
   <tbody>
   {{ $ctx := .Context }}
+  {{ $gID := .Data.ID }}
   {{ range $s := .Data.Sounds }}
     <tr>
 	  <td>{{ $s.Name }}</td>
 	  <td>{{ $s.Commands }}</td>
-	  <td><a href="{{ $ctx.SiteURL }}/sound/{{ $s.ID }}" class="button">
+	  <td><a href="{{ $ctx.SiteURL }}/manage/{{ $gID }}/sound/{{ $s.ID }}" class="button">
 	    Edit
 	  </a></td>
 	</tr>

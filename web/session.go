@@ -104,6 +104,20 @@ func GetDiscordSession(token string) *discordgo.Session {
 	return discord
 }
 
+func IsDiscordAdmin(session *discordgo.Session, guildID string) (bool, error) {
+	userGuilds, err := session.UserGuilds(100, "", "")
+	if err != nil {
+		return false, err
+	}
+
+	for _, g := range userGuilds {
+		if g.Permissions&permAdministrator != 0 {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func verifyAndOpenSession(w http.ResponseWriter, r *http.Request, s *sessions.Session) bool {
 	// Check the state string is correct
 	state := r.FormValue("state")

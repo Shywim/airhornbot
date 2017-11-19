@@ -4,8 +4,9 @@ import "database/sql"
 
 // Sound represents a sound clip
 type Sound struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID      string `json:"id"`
+	GuildID string
+	Name    string `json:"name"`
 
 	// Link to a gif url
 	Gif string `json:"gif"`
@@ -14,7 +15,8 @@ type Sound struct {
 	Weight int `json:"weight"`
 
 	// Command to type in channel
-	Commands []string `json:"commands"`
+	Commands       []string `json:"commands"`
+	CommandsString string
 
 	FilePath string
 }
@@ -112,6 +114,31 @@ func DeleteSound(gID string, sID string) error {
 	return err
 }
 
+func GetSound(ID string) (*Sound, error) {
+	db, err := getDB()
+	if err != nil {
+		return nil, err
+	}
+
+	row := db.QueryRow("SELECT id, guildId, name, weight, filepath FROM sound WHERE id = $1", ID)
+
+	sound, err := buildSound(row)
+	if err != nil {
+		return nil, err
+	}
+
+	row = db.QueryRow("SELECT command FROM command WHERE soundId = $1", ID)
+
+	var command string
+	if err := row.Scan(&command); err != nil {
+		return nil, err
+	}
+	sound.Commands = []string{command}
+	sound.CommandsString = command
+
+	return sound, nil
+}
+
 // GetSoundsByCommand return all sounds for a given command
 func GetSoundsByCommand(command, guildID string) ([]*Sound, error) {
 	db, err := getDB()
@@ -132,9 +159,6 @@ func GetSoundsByCommand(command, guildID string) ([]*Sound, error) {
 		}
 
 		row := db.QueryRow("SELECT id, name, weight, filepath FROM sound WHERE id = $1", soundID)
-		if err != nil {
-			return nil, err
-		}
 
 		sound, err := buildSound(row)
 		if err != nil {

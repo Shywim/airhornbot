@@ -3,6 +3,7 @@ package web
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/Shywim/airhornbot/service"
 	log "github.com/Sirupsen/logrus"
@@ -121,9 +122,9 @@ func ManageGuildRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 	if err != nil {
 		// TODO: error
 		log.WithFields(log.Fields{
-      "error": err,
-      "guildID": ps.ByName("guildID"),
-    }).Error("Error retrieving user's guild")
+			"error":   err,
+			"guildID": ps.ByName("guildID"),
+		}).Error("Error retrieving user's guild")
 		return
 	}
 
@@ -133,4 +134,42 @@ func ManageGuildRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 		Data:    guild,
 	}
 	renderTemplate(w, "guild.gohtml", tmplData)
+}
+
+func EditSoundRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	var sound *service.Sound
+	soundID := ps.ByName("soundID")
+	guildID := ps.ByName("guildID")
+	if strings.Compare(soundID, "new") == 0 {
+		sound = &service.Sound{
+			GuildID: guildID,
+		}
+	} else {
+		token := getDiscordToken(r)
+		if token == "" {
+			AskLoginRoute(w, r, nil)
+			return
+		}
+
+		session := GetDiscordSession(token)
+		isAdmin, err := IsDiscordAdmin(session, guildID)
+		if err != nil || !isAdmin {
+			// TODO: error
+			AskLoginRoute(w, r, nil)
+			return
+		}
+
+		sound, err = service.GetSound(soundID)
+		if err != nil {
+			// TODO: error
+			return
+		}
+	}
+
+	tmplCtx := getContext(r)
+	tmplData := TemplateData{
+		Context: tmplCtx,
+		Data:    sound,
+	}
+	renderTemplate(w, "sound.gohtml", tmplData)
 }
