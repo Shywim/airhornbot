@@ -1,0 +1,30 @@
+{{ template "head.gohtml" .Context }}
+<body>
+  <div class="header">
+    <img class="guild-logo" src="{{ .Data.Icon }}">
+    <h2>Managing {{ .Data.Name }} sounds</h2>
+  </div>
+
+  <table>
+  <thead>
+	<tr>
+	  <th>Name</th>
+	  <th>Commands</th>
+	  <th></th>
+	</tr>
+  </thead>
+  <tbody>
+  {{ $ctx := .Context }}
+  {{ range $s := .Data.Sounds }}
+    <tr>
+	  <td>{{ $s.Name }}</td>
+	  <td>{{ $s.Commands }}</td>
+	  <td><a href="{{ $ctx.SiteURL }}/sound/{{ $s.ID }}" class="button">
+	    Edit
+	  </a></td>
+	</tr>
+  {{ end }}
+  </tbody>
+  </table>
+
+  {{ template "footer.gohtml" .Context }}

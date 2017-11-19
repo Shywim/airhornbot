@@ -1,6 +1,7 @@
 package service
 
 import (
+  "errors"
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
@@ -32,11 +33,15 @@ func AddGuild(gID string) error {
 }
 
 func GetGuildWithSounds(session *discordgo.Session, gID string) (Guild, error) {
-	g, err := session.Guild(gID)
+  guilds, err := session.UserGuilds(100, "", "")
 	if err != nil {
 		return Guild{}, err
 	}
 
+  for _, g := range guilds {
+  if g.ID != gID {
+    continue
+    }
 	guild := Guild{
 		ID:   g.ID,
 		Name: g.Name,
@@ -51,6 +56,8 @@ func GetGuildWithSounds(session *discordgo.Session, gID string) (Guild, error) {
 	guild.Sounds = sounds
 
 	return guild, nil
+  }
+  return Guild{}, errors.New("no guild found")
 }
 
 func GetGuildsWithSounds(session *discordgo.Session) (interface{}, error) {

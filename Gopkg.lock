@@ -155,7 +155,7 @@
   branch = "feature/templates"
   name = "github.com/shywim/airhornbot"
   packages = ["service"]
-  revision = "4d75550b30e38f061d690e0022762f0be49f3c6d"
+  revision = "e676190bc98d246b6f516a0e3c274d0e046b6c88"
 
 [[projects]]
   branch = "master"

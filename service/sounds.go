@@ -131,7 +131,7 @@ func GetSoundsByCommand(command, guildID string) ([]*Sound, error) {
 			return nil, err
 		}
 
-		row := db.QueryRow("SELECT id, name, gif, weight, filepath FROM sound WHERE id = $1", soundID)
+		row := db.QueryRow("SELECT id, name, weight, filepath FROM sound WHERE id = $1", soundID)
 		if err != nil {
 			return nil, err
 		}
@@ -153,7 +153,7 @@ func GetSoundsByGuild(guildID string) ([]*Sound, error) {
 		return nil, err
 	}
 
-	rows, err := db.Query("SELECT * FROM sound WHERE guildId = $1", guildID)
+	rows, err := db.Query("SELECT id, name, weight, filepath FROM sound WHERE guildId = $1", guildID)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +178,7 @@ func FilterByCommand(c string, s []*Sound) (r []*Sound) {
 func buildSound(row *sql.Row) (*Sound, error) {
 	var sound Sound
 	var gif sql.NullString // gif can be null
-	if err := row.Scan(&sound.ID, &sound.Name, &gif, &sound.Weight, &sound.FilePath); err != nil {
+	if err := row.Scan(&sound.ID, &sound.Name, &sound.Weight, &sound.FilePath); err != nil {
 		return nil, err
 	}
 
@@ -190,7 +190,7 @@ func buildSounds(db *sql.DB, rows *sql.Rows) ([]*Sound, error) {
 	var sounds []*Sound
 	for rows.Next() {
 		var sound Sound
-		if err := rows.Scan(&sound.ID, &sound.Name, &sound.Gif, &sound.Weight, &sound.FilePath); err != nil {
+		if err := rows.Scan(&sound.ID, &sound.Name, &sound.Weight, &sound.FilePath); err != nil {
 			return nil, err
 		}
 
@@ -202,7 +202,7 @@ func buildSounds(db *sql.DB, rows *sql.Rows) ([]*Sound, error) {
 		var commands []string
 		for commandsRows.Next() {
 			var command string
-			if err := rows.Scan(&command); err != nil {
+			if err := commandsRows.Scan(&command); err != nil {
 				return nil, err
 			}
 

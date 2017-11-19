@@ -120,7 +120,10 @@ func ManageGuildRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 	guild, err := service.GetGuildWithSounds(session, ps.ByName("guildID"))
 	if err != nil {
 		// TODO: error
-		log.WithError(err).Error("Error retrieving user's guild")
+		log.WithFields(log.Fields{
+      "error": err,
+      "guildID": ps.ByName("guildID"),
+    }).Error("Error retrieving user's guild")
 		return
 	}
 
