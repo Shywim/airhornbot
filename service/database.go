@@ -12,6 +12,8 @@ import (
 	_ "github.com/lib/pq"
 )
 
+var db *sql.DB
+
 func initDb() {
 	db, err := getDB()
 	if err != nil {
@@ -50,6 +52,10 @@ func initDb() {
 }
 
 func getDB() (*sql.DB, error) {
+  if (db != nil) {
+    return db, nil
+  }
+
 	connPrefix := ""
 	connSuffix := ""
 	if config.DBDriver == "postgres" {

@@ -1,12 +1,9 @@
 package main
 
 import (
-	"errors"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -18,9 +15,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/sessions"
-	"github.com/jonas747/dca"
 	"github.com/julienschmidt/httprouter"
-	uuid "github.com/satori/go.uuid"
 )
 
 const (
@@ -33,7 +28,6 @@ var (
 
 	// Used for pushing live stat updates to the client
 	es            eventsource.EventSource
-	userAudioPath *string
 )
 
 type guildInfo struct {
@@ -48,137 +42,6 @@ func newCountUpdate() *service.CountUpdate {
 	return service.GetStats()
 }
 
-func handleEditSound(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	session, _ := store.Get(r, "session")
-	guildID := ps.ByName("guildId")
-	token := session.Values["token"]
-
-	hasPerm, err := checkIsGuildAdmin(guildID, string(token.(string)))
-	if err != nil {
-		if strings.HasPrefix(err.Error(), "HTTP 401") {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if hasPerm == false {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	r.ParseMultipartForm(0)
-
-	weight, err := strconv.Atoi(r.MultipartForm.Value["weight"][0])
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	sndFile, sndFileH, err := r.FormFile("file")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	commands := r.MultipartForm.Value["command"][0]
-	if commands == "" {
-		http.Error(w, err.Error(), http.StatusNotAcceptable)
-		return
-	}
-
-	soundID := ps.ByName("soundID")
-	if soundID == "new" {
-		soundID = uuid.NewV4().String()
-		// read file size
-		var sndFileSize int64
-		switch t := sndFile.(type) {
-		case *os.File:
-			sndFileInfo, err := t.Stat()
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			sndFileSize = sndFileInfo.Size()
-			break
-		default:
-			sndFileSize, err = sndFile.Seek(0, 0)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			break
-		}
-
-		// check file > 200kB
-		if sndFileSize > 200000 {
-			http.Error(w, "File too large", http.StatusNotAcceptable)
-			return
-		}
-
-		var dcaData io.Reader
-		if !strings.HasSuffix(sndFileH.Filename, ".dca") {
-			// convert file if (presumably) not a dca file
-			dcaSession, err := dca.EncodeMem(sndFile, dca.StdEncodeOptions)
-			defer dcaSession.Cleanup()
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			dcaData = dcaSession
-		} else {
-			dcaData = sndFile
-		}
-
-		err = saveAudio(dcaData, soundID)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		sound := service.Sound{
-			Name:     r.MultipartForm.Value["name"][0],
-			Weight:   weight,
-			FilePath: soundID,
-		}
-
-		err = service.SaveSound(guildID, &sound, strings.Split(commands, ","))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	} else {
-		sound := service.Sound{
-			Name:     r.MultipartForm.Value["name"][0],
-			Weight:   weight,
-			FilePath: soundID,
-		}
-
-		err = service.UpdateSound(guildID, soundID, &sound, strings.Split(commands, ","))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-
-	w.WriteHeader(http.StatusOK)
-}
-
-func checkIsGuildAdmin(guildID, token string) (bool, error) {
-	discord := web.GetDiscordSession(token)
-
-	guilds, err := discord.UserGuilds(100, "", "")
-	if err != nil {
-		return false, err
-	}
-
-	guild := findGuild(guilds, guildID)
-	if guild == nil {
-		return false, errors.New("not a user of guild")
-	}
-
-	return guild.Permissions&permAdministrator != 0, nil
-}
 
 func findGuild(guilds []*discordgo.UserGuild, guildID string) *discordgo.UserGuild {
 	for _, g := range guilds {
@@ -189,29 +52,8 @@ func findGuild(guilds []*discordgo.UserGuild, guildID string) *discordgo.UserGui
 	return nil
 }
 
-func saveAudio(a io.Reader, n string) error {
-	// check user directory exists
-	_, err := os.Stat(*userAudioPath)
-	if os.IsNotExist(err) {
-		os.Mkdir(*userAudioPath, os.ModePerm)
-	} else if err != nil {
-		return err
-	}
-
-	// create file
-	out, err := os.Create(filepath.Join(*userAudioPath, n))
-	if err != nil {
-		return err
-	}
-
-	// encore file
-	io.Copy(out, a)
-
-	return nil
-}
-
 func handleDeleteSound(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	guildID := ps.ByName("guildId")
+/*	guildID := ps.ByName("guildId")
 	soundID := ps.ByName("soundId")
 	session, _ := store.Get(r, "session")
 	token := session.Values["token"]
@@ -235,6 +77,8 @@ func handleDeleteSound(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+  
+  */
 
 	w.WriteHeader(http.StatusOK)
 }
@@ -257,9 +101,9 @@ func server() {
 	server.GET("/login", web.LoginRoute)
 	server.GET("/callback", web.CallbackRoute)
 	server.GET("/manage", web.ManageRoute)
+	server.GET("/manage/:guildID/sound/:soundID", web.EditSoundRoute)
+	server.POST("/manage/:guildID/sound/:soundID", web.EditSoundPostRoute)
 	server.GET("/manage/:guildID", web.ManageGuildRoute)
-	server.GET("/manage/:guildId/sound/:soundId", web.EditSoundRoute)
-	server.POST("/manage/:guildId/sound/:soundId", handleEditSound)
 	server.DELETE("/manage/:guildId/:soundId", handleDeleteSound)
 
 	// Only add this route if we have stats to push (e.g. redis connection)
@@ -315,8 +159,6 @@ func main() {
 	}
 
 	web.LoadTemplates("templates")
-
-	userAudioPath = &cfg.DataPath
 
 	hasRedis := service.InitRedis(cfg)
 	if hasRedis {

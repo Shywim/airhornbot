@@ -21,7 +21,7 @@
   {{ range $s := .Data.Sounds }}
     <tr>
 	  <td>{{ $s.Name }}</td>
-	  <td>{{ $s.Commands }}</td>
+	  <td>{{ $s.CommandsString }}</td>
 	  <td><a href="{{ $ctx.SiteURL }}/manage/{{ $gID }}/sound/{{ $s.ID }}" class="button">
 	    Edit
 	  </a></td>

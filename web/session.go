@@ -36,9 +36,12 @@ var (
 
 	// Oauth2 config for managing bot
 	manageOAuthConf *oauth2.Config
+
+	userAudioPath *string
 )
 
 func InitSessions(cfg service.Cfg) {
+	userAudioPath = &cfg.DataPath
 	store = sessions.NewCookieStore([]byte(cfg.DiscordClientSecret))
 
 	// Setup the OAuth2 Configuration

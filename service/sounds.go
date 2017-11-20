@@ -1,6 +1,11 @@
 package service
 
-import "database/sql"
+import (
+  "database/sql"
+  "os"
+  "io"
+	"path/filepath"
+)
 
 // Sound represents a sound clip
 type Sound struct {
@@ -58,6 +63,27 @@ func SaveSound(gID string, s *Sound, commands []string) error {
 	return tx.Commit()
 }
 
+func SaveAudio(a io.Reader, n string) error {
+	// check user directory exists
+	_, err := os.Stat(config.DataPath)
+	if os.IsNotExist(err) {
+		os.Mkdir(config.DataPath, os.ModePerm)
+	} else if err != nil {
+		return err
+	}
+
+	// create file
+	out, err := os.Create(filepath.Join(config.DataPath, n))
+	if err != nil {
+		return err
+	}
+
+	// encore file
+	io.Copy(out, a)
+
+	return nil
+}
+
 // UpdateSound update a sound in DB
 func UpdateSound(gID string, sID string, s *Sound, commands []string) error {
 	db, err := getDB()
@@ -70,26 +96,26 @@ func UpdateSound(gID string, sID string, s *Sound, commands []string) error {
 		return err
 	}
 
-	res, err := tx.Exec("INSERT INTO sound (guildID, name, gif, weight, filepath) VALUES ($1, $2, $3, $4, $5)",
+	_, err = tx.Exec("UPDATE sound SET guildID = $1, name = $2, gif = $3, weight = $4 WHERE id = $5",
 		gID,
 		s.Name,
 		s.Gif,
-		s.Weight)
+		s.Weight,
+    sID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
-	soundID := res.LastInsertId
 
-	_, err = tx.Exec("DELETE FROM command WHERE soundId = $1 AND guildId = $2")
+	_, err = tx.Exec("DELETE FROM command WHERE soundId = $1 AND guildId = $2", sID, gID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	for command := range commands {
-		res, err = tx.Exec("INSERT INTO command (soundId, guildId, command) VALUES ($1, $2, $3)",
-			soundID,
+		_, err = tx.Exec("INSERT INTO command (soundId, guildId, command) VALUES ($1, $2, $3)",
+			sID,
 			gID,
 			command)
 		if err != nil {
@@ -120,7 +146,7 @@ func GetSound(ID string) (*Sound, error) {
 		return nil, err
 	}
 
-	row := db.QueryRow("SELECT id, guildId, name, weight, filepath FROM sound WHERE id = $1", ID)
+	row := db.QueryRow("SELECT id, name, weight, filepath FROM sound WHERE id = $1", ID)
 
 	sound, err := buildSound(row)
 	if err != nil {
@@ -231,6 +257,10 @@ func buildSounds(db *sql.DB, rows *sql.Rows) ([]*Sound, error) {
 			}
 
 			commands = append(commands, command)
+      if sound.CommandsString != "" {
+        sound.CommandsString = sound.CommandsString + ","
+      }
+      sound.CommandsString = sound.CommandsString + command
 		}
 		sound.Commands = commands
 
