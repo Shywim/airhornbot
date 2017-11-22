@@ -38,6 +38,12 @@
   version = "v1.2.0"
 
 [[projects]]
+  name = "github.com/go-sql-driver/mysql"
+  packages = ["."]
+  revision = "a0583e0143b1624142adab07e0e97fe106d99561"
+  version = "v1.3"
+
+[[projects]]
   branch = "master"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
@@ -128,6 +134,12 @@
   revision = "d4c23bd0e01134806215ffe65ba3fd22ec6721f7"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/oxtoacart/bpool"
+  packages = ["."]
+  revision = "4e1c5567d7c2dd59fa4c7c83d34c2f3528b025d6"
+
+[[projects]]
   name = "github.com/pelletier/go-toml"
   packages = ["."]
   revision = "16398bac157da96aa88f98a2df640c7f32af1da2"
@@ -214,6 +226,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "72f8a10490f31f100e3013b9a0fa9487273cdc2144d948415f940cc42d0bd3d1"
+  inputs-digest = "29778e430d59bef25396436ac6fe6bb38e11be99e51b61d14188a5545e000b38"
   solver-name = "gps-cdcl"
   solver-version = 1

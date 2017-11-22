@@ -1,0 +1,22 @@
+{{ template "head.gohtml" .Context }}
+<body>
+  <div class="section main-section" id="main-section">
+    <div class="content">
+      <div class="heading">
+        <h1 class="title">!airhorn</h1>
+        <p class="message">The only bot for Discord you'll ever need</p>
+      </div>
+
+      <video id="video" class="video-airhorn" poster="{{ .Context.SiteURL }}/assets/thumbnail.jpg" preload>
+        <source src="{{ .Context.SiteURL }}/assets/airhorn_video.mp4" type="video/mp4">
+        <source src="{{ .Context.SiteURL }}/assets/airhorn_video.ogv" type="video/ogg; codecs=theora, vorbis">
+        <source src="{{ .Context.SiteURL }}/assets/airhorn_video.webm" type="video/webm; codecs=vp8, vorbis">
+        <audio id="audio" preload src="{{ .Context.SiteURL }}/assets/airhorn.ogg" type="audio/ogg; codecs=opus"></audio>
+      </video>
+
+      <a class="add-btn" href="{{ .Context.SiteURL }}/login">Add to Discord</a>
+      <a class="add-btn" href="{{ .Context.SiteURL }}/manage">Manage my Airhorn</a>
+
+    </div>
+  </div>
+{{ template "footer.gohtml" .Context }}

@@ -11,11 +11,11 @@ import (
 )
 
 const (
-	basePackage = "github.com/shywim/airhornbot"
-	botPackage = basePackage + "/cmd/bot"
-	botBinary = "airhornbot"
-	webPackage = basePackage + "/cmd/web"
-	webBinary = "airhornweb"
+	basePackage = "github.com/Shywim/airhornbot"
+	botPackage  = basePackage + "/cmd/bot"
+	botBinary   = "airhornbot"
+	webPackage  = basePackage + "/cmd/web"
+	webBinary   = "airhornweb"
 )
 
 var goexe = "go"
@@ -51,7 +51,7 @@ func AirhornBot() error {
 
 // Build the server binary and the web application
 func AirhornWeb() error {
-	mg.Deps(Vendor, WebApp)
+	mg.Deps(Vendor)
 	return sh.Run(goexe, "build", "-o", webBinary, webPackage)
 }
 

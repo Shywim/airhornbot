@@ -11,6 +11,7 @@ airhornbot
 airhornweb
 vendor/
 config/config.toml
+*.exe
 
 web-app/public/js
 web-app/public/css

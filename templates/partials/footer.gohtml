@@ -1,0 +1,83 @@
+<div class="footer">
+  <div id="stats-panel" class="stats-panel crossfade one-reverse is-hidden">
+    <div class="stats-row">
+      <img src="{{ .SiteURL }}/assets/icon-plays.svg">
+      <div class="label-value">
+        <div id="plays-count" class="value">{{ .StatsCounter.Total }}</div>
+        <div class="label">Plays</div>
+      </div>
+    </div>
+    <div class="stats-row">
+      <img src="{{ .SiteURL }}/assets/icon-users.svg">
+      <div class="label-value">
+        <div id="users-count" class="value">{{ .StatsCounter.UniqueUsers }}</div>
+        <div class="label">Unique Users</div>
+      </div>
+    </div>
+    <div class="stats-row">
+      <img src="{{ .SiteURL }}/assets/icon-servers.svg">
+      <div class="label-value">
+        <div id="guilds-count" class="value">{{ .StatsCounter.UniqueGuilds }}</div>
+        <div class="label">Unique Servers</div>
+      </div>
+    </div>
+    <div class="stats-row">
+      <img src="{{ .SiteURL }}/assets/icon-channels.svg">
+      <div class="label-value">
+        <div id="channels-count" class="value">{{ .StatsCounter.UniqueChannels }}</div>
+        <div class="label">Unique channels</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-content">
+    <div class="airhorn-count">
+      <div id="stats-toggler" class="stats-toggler">
+        <div class="airhorn-count-content">
+          <img src="{{ .SiteURL }}/assets/airhorn-counter.svg">
+          <div class="count-text">
+            <div class="count" id="count">
+              <noscript>plenty of noise</noscript>
+              {{ if .NoRedis }}
+                plenty of noise
+              {{ end }}
+            </div>
+            <div class="and-counting">and counting</div>
+          </div>
+        </div>
+        <div id="stats-btn" class="stats-btn is-hidden">
+          <img id="stats-panel-close" class="crossfade three-reverse"
+               src="{{ .SiteURL }}/assets/icon-close.svg">
+          <img id="stats-panel-open" class="crossfade two-reverse" src="{{ .SiteURL }}/assets/icon-about.svg"
+               tip="Click for more stats" currentitem="false">
+        </div>
+      </div>
+    </div>
+
+    <div class="main-text">
+      <span class="normal-text">
+      <span>Open sourced by the team at</span>
+      <a href="https://discordapp.com">Discord</a>
+      <span>. Tinkered with <span class="love">love</span> by Shywim.</span>
+      <br>
+      <span>Contribute yourself on</span>
+      <a href="https://github.com/shywim/airhornbot">Github ➔</a>
+      </span>
+    </div>
+
+    <div class="social">
+      <a id="share-fb" href="https://www.facebook.com/sharer.php?u={{ .SiteURL }}">
+        <img src="{{ .SiteURL }}/assets/icon-facebook.svg">
+      </a>
+      <a id="share-twitter"
+         href="https://twitter.com/share?text=This Discord bot makes airhorn sounds ayy lmao&url={{ .SiteURL }}">
+        <img src="{{ .SiteURL }}/assets/icon-twitter.svg">
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script type="text/javascript" src="{{ .SiteURL }}/js/footer.js"></script>
+</body>
+</html>

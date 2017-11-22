@@ -1,0 +1,8 @@
+{{ template "head.gohtml" .Context }}
+<body>
+	<div class="content">
+		<p>You need to connect your Discord account to see this page!</p>
+
+		<a href="{{ .Context.SiteURL }}/login" class="button">LOGIN</a>
+	</div>
+{{ template "footer.gohtml" .Context }}
