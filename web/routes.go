@@ -2,17 +2,17 @@ package web
 
 import (
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"strings"
-  "os"
-  "io"
 
-	"github.com/jonas747/dca"
-  "github.com/Shywim/airhornbot/service"
+	"github.com/Shywim/airhornbot/service"
 	log "github.com/Sirupsen/logrus"
+	"github.com/jonas747/dca"
 	"github.com/julienschmidt/httprouter"
-	"golang.org/x/oauth2"
 	uuid "github.com/satori/go.uuid"
+	"golang.org/x/oauth2"
 )
 
 // HomeRoute serves home.gohtml
@@ -145,19 +145,19 @@ func EditSoundRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 	soundID := ps.ByName("soundID")
 	guildID := ps.ByName("guildID")
 
-		token := getDiscordToken(r)
-		if token == "" {
-			AskLoginRoute(w, r, nil)
-			return
-		}
+	token := getDiscordToken(r)
+	if token == "" {
+		AskLoginRoute(w, r, nil)
+		return
+	}
 
-		session := GetDiscordSession(token)
-		isAdmin, err := IsDiscordAdmin(session, guildID)
-		if err != nil || !isAdmin {
-			// TODO: error
-			AskLoginRoute(w, r, nil)
-			return
-		}
+	session := GetDiscordSession(token)
+	isAdmin, err := IsDiscordAdmin(session, guildID)
+	if err != nil || !isAdmin {
+		// TODO: error
+		AskLoginRoute(w, r, nil)
+		return
+	}
 
 	if strings.Compare(soundID, "new") == 0 {
 		sound = &service.Sound{
@@ -166,14 +166,14 @@ func EditSoundRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 	} else {
 		sound, err = service.GetSound(soundID)
 		if err != nil {
-		log.WithFields(log.Fields{
-			"error":   err,
-			"guildID": ps.ByName("guildID"),
-		}).Error("Error retrieving sound")
+			log.WithFields(log.Fields{
+				"error":   err,
+				"guildID": ps.ByName("guildID"),
+			}).Error("Error retrieving sound")
 			// TODO: error
 			return
 		}
-    sound.GuildID = guildID
+		sound.GuildID = guildID
 	}
 
 	tmplCtx := getContext(r)
@@ -187,7 +187,7 @@ func EditSoundRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 func EditSoundPostRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	guildID := ps.ByName("guildID")
 	token := getDiscordToken(r)
-  session := GetDiscordSession(token)
+	session := GetDiscordSession(token)
 
 	hasPerm, err := IsDiscordAdmin(session, guildID)
 	if err != nil {
@@ -210,7 +210,7 @@ func EditSoundPostRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}*/
-  weight := 1
+	weight := 1
 
 	commands := r.MultipartForm.Value["commands"][0]
 	if commands == "" {
@@ -220,11 +220,11 @@ func EditSoundPostRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 
 	soundID := ps.ByName("soundID")
 	if soundID == "new" {
-	sndFile, sndFileH, err := r.FormFile("file")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+		sndFile, sndFileH, err := r.FormFile("file")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		soundID = uuid.NewV4().String()
 		// read file size
@@ -298,5 +298,5 @@ func EditSoundPostRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 		}
 	}
 
-  ManageGuildRoute(w, r, ps)
+	ManageGuildRoute(w, r, ps)
 }

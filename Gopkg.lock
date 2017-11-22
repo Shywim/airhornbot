@@ -152,12 +152,6 @@
   version = "v1.1.0"
 
 [[projects]]
-  branch = "feature/templates"
-  name = "github.com/shywim/airhornbot"
-  packages = ["service"]
-  revision = "e676190bc98d246b6f516a0e3c274d0e046b6c88"
-
-[[projects]]
   branch = "master"
   name = "github.com/spf13/afero"
   packages = [".","mem"]
@@ -232,6 +226,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e2997a8903db017706a01e10d20ce4e2f7b660b83de4897874705a9be6ac1853"
+  inputs-digest = "29778e430d59bef25396436ac6fe6bb38e11be99e51b61d14188a5545e000b38"
   solver-name = "gps-cdcl"
   solver-version = 1

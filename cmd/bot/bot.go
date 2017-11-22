@@ -16,13 +16,13 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/Shywim/airhornbot/service"
 	log "github.com/Sirupsen/logrus"
 	"github.com/bwmarrin/discordgo"
 	"github.com/dustin/go-humanize"
 	"github.com/garyburd/redigo/redis"
 	"github.com/jonas747/dca"
 	"github.com/orcaman/concurrent-map"
-	"github.com/shywim/airhornbot/service"
 )
 
 var (
@@ -49,7 +49,7 @@ var (
 	pluginsPath *string
 
 	plugins = make(map[string]*airhornPlugin)
-	cfg     *service.Cfg
+	cfg     service.Cfg
 )
 
 type airhornPlugin struct {
@@ -659,7 +659,10 @@ func loadPlugins() {
 }
 
 func main() {
-	cfg = service.LoadConfig()
+	cfg, err := service.LoadConfig()
+	if err != nil {
+		log.WithError(err).Fatal("couldn't load config")
+	}
 
 	loadPlugins()
 
@@ -679,7 +682,7 @@ func main() {
 
 	// test redis connection
 	conn := redisPool.Get()
-	_, err := conn.Do("PING")
+	_, err = conn.Do("PING")
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,

@@ -1,9 +1,9 @@
 package service
 
 import (
-  "database/sql"
-  "os"
-  "io"
+	"database/sql"
+	"io"
+	"os"
 	"path/filepath"
 )
 
@@ -63,6 +63,7 @@ func SaveSound(gID string, s *Sound, commands []string) error {
 	return tx.Commit()
 }
 
+// SaveAudio write the sound to a file
 func SaveAudio(a io.Reader, n string) error {
 	// check user directory exists
 	_, err := os.Stat(config.DataPath)
@@ -101,18 +102,20 @@ func UpdateSound(gID string, sID string, s *Sound, commands []string) error {
 		s.Name,
 		s.Gif,
 		s.Weight,
-    sID)
+		sID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
+	// delete every command associated to the sound
 	_, err = tx.Exec("DELETE FROM command WHERE soundId = $1 AND guildId = $2", sID, gID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
+	// add new commands
 	for command := range commands {
 		_, err = tx.Exec("INSERT INTO command (soundId, guildId, command) VALUES ($1, $2, $3)",
 			sID,
@@ -257,10 +260,10 @@ func buildSounds(db *sql.DB, rows *sql.Rows) ([]*Sound, error) {
 			}
 
 			commands = append(commands, command)
-      if sound.CommandsString != "" {
-        sound.CommandsString = sound.CommandsString + ","
-      }
-      sound.CommandsString = sound.CommandsString + command
+			if sound.CommandsString != "" {
+				sound.CommandsString = sound.CommandsString + ","
+			}
+			sound.CommandsString = sound.CommandsString + command
 		}
 		sound.Commands = commands
 

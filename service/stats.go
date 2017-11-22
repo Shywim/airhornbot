@@ -8,7 +8,7 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
-// Represents a JSON struct of stats that are updated every second and pushed to the client
+// CountUpdate represents a JSON struct of stats that are updated every second and pushed to the client
 type CountUpdate struct {
 	Total          string `json:"total"`
 	UniqueUsers    string `json:"unique_users"`
@@ -16,11 +16,13 @@ type CountUpdate struct {
 	UniqueChannels string `json:"unique_channels"`
 }
 
+// ToJSON format CountUpdate in JSON
 func (c *CountUpdate) ToJSON() []byte {
 	data, _ := json.Marshal(c)
 	return data
 }
 
+// GetStats read stats counter from redis
 func GetStats() *CountUpdate {
 	var (
 		total  int64
