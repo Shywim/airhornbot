@@ -129,12 +129,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/orcaman/concurrent-map"
-  packages = ["."]
-  revision = "d4c23bd0e01134806215ffe65ba3fd22ec6721f7"
-
-[[projects]]
-  branch = "master"
   name = "github.com/oxtoacart/bpool"
   packages = ["."]
   revision = "4e1c5567d7c2dd59fa4c7c83d34c2f3528b025d6"
@@ -226,6 +220,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "29778e430d59bef25396436ac6fe6bb38e11be99e51b61d14188a5545e000b38"
+  inputs-digest = "154b8eb81b7f2929406bed1af0172a10701f6c0f7e9b0b861e5c963cae777ad4"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -13,6 +13,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"text/tabwriter"
 	"time"
 
@@ -22,7 +23,6 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/garyburd/redigo/redis"
 	"github.com/jonas747/dca"
-	"github.com/orcaman/concurrent-map"
 )
 
 var (
@@ -33,7 +33,7 @@ var (
 	redisPool *redis.Pool
 
 	// Map of Guild id's to *Play channels, used for queuing and rate-limiting guilds
-	queues = cmap.New()
+	queues = sync.Map{}
 
 	// Sound encoding settings
 	bitrate = 128
@@ -43,10 +43,6 @@ var (
 
 	// Owner
 	owner string
-
-	userAudioPath *string
-
-	pluginsPath *string
 
 	plugins = make(map[string]*airhornPlugin)
 	cfg     service.Cfg
@@ -114,7 +110,7 @@ func voiceConnect(gid, cid string) (vc *discordgo.VoiceConnection, err error) {
 func voiceDisconnect(vc *discordgo.VoiceConnection) {
 	if vc != nil {
 		log.Info("Disconnecting active voice connection")
-		vc.Disconnect()
+		_ = vc.Disconnect()
 		return
 	}
 
@@ -180,7 +176,7 @@ func loadSound(s *service.Sound) (buffer [][]byte, err error) {
 }
 
 func doPlay(soundData [][]byte, vc *discordgo.VoiceConnection) {
-	vc.Speaking(true)
+	_ = vc.Speaking(true)
 	defer vc.Speaking(false)
 
 	for _, buff := range soundData {
@@ -221,15 +217,15 @@ func enqueuePlay(user *discordgo.User, guild *discordgo.Guild, sounds []*service
 	}
 
 	// Check if we already have a connection to this guild
-	tmp, exists := queues.Get(guild.ID)
+	tmp, ok := queues.Load(guild.ID)
 
-	if exists {
-		queue := tmp.(chan *Play)
+	if ok && tmp != nil {
+		queue, _ := tmp.(chan *Play)
 		if len(queue) < maxQueueSize {
 			queue <- play
 		}
 	} else {
-		queues.Set(guild.ID, make(chan *Play, maxQueueSize))
+		queues.Store(guild.ID, make(chan *Play, maxQueueSize))
 		playSound(play, nil, cid)
 	}
 }
@@ -282,7 +278,7 @@ func playSound(play *Play, vc *discordgo.VoiceConnection, cid string) (err error
 			log.WithFields(log.Fields{
 				"error": err,
 			}).Error("Failed to play sound")
-			queues.Remove(play.GuildID)
+			queues.Delete(play.GuildID)
 			return err
 		}
 	}
@@ -308,7 +304,7 @@ func playSound(play *Play, vc *discordgo.VoiceConnection, cid string) (err error
 	doPlay(soundData, vc)
 
 	// If there is another song in the queue, recurse and play that
-	tmp, exists := queues.Get(play.GuildID)
+	tmp, exists := queues.Load(play.GuildID)
 
 	if exists {
 		queue := tmp.(chan *Play)
@@ -317,11 +313,13 @@ func playSound(play *Play, vc *discordgo.VoiceConnection, cid string) (err error
 			playSound(play, vc, cid)
 			return nil
 		}
+
+		close(queue)
 	}
 
 	// If the queue is empty, delete it
+	queues.Delete(play.GuildID)
 	time.Sleep(time.Millisecond * time.Duration(250))
-	queues.Remove(play.GuildID)
 	voiceDisconnect(vc)
 	return nil
 }
@@ -329,18 +327,6 @@ func playSound(play *Play, vc *discordgo.VoiceConnection, cid string) (err error
 func onReady(s *discordgo.Session, event *discordgo.Ready) {
 	log.Info("Recieved READY payload")
 	s.UpdateStatus(0, "airhorn.shywim.fr")
-}
-
-func onGuildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
-	if event.Guild.Unavailable {
-		return
-	}
-
-	for _, channel := range event.Guild.Channels {
-		if channel.ID == event.Guild.ID {
-			return
-		}
-	}
 }
 
 func scontains(key string, options ...string) bool {
@@ -600,8 +586,8 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
-func loadPlugins() {
-	files, err := ioutil.ReadDir(*pluginsPath)
+func loadPlugins(pluginsPath string) {
+	files, err := ioutil.ReadDir(pluginsPath)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
@@ -611,7 +597,7 @@ func loadPlugins() {
 
 	for _, file := range files {
 		if !file.IsDir() && strings.Contains(file.Name(), ".so") {
-			p, err := plugin.Open(*pluginsPath + file.Name())
+			p, err := plugin.Open(pluginsPath + file.Name())
 			if err != nil {
 				log.WithFields(log.Fields{
 					"error":  err,
@@ -661,35 +647,34 @@ func loadPlugins() {
 func main() {
 	cfg, err := service.LoadConfig()
 	if err != nil {
-		log.WithError(err).Fatal("couldn't load config")
+		log.WithError(err).Fatal("Couldn't load configuration")
 	}
 
-	loadPlugins()
+	loadPlugins(cfg.PluginPath)
 
-	userAudioPath = &cfg.DataPath
-	pluginsPath = &cfg.PluginPath
+	if cfg.RedisHost != "" {
+		// connect to redis
+		log.Info("Connecting to redis...")
+		redisPool = &redis.Pool{
+			MaxIdle:     3,
+			IdleTimeout: 240 * time.Second,
+			Dial: func() (redis.Conn, error) {
+				return redis.Dial("tcp", cfg.RedisHost)
+			},
+		}
+		defer redisPool.Close()
 
-	// connect to redis
-	log.Info("Connecting to redis...")
-	redisPool = &redis.Pool{
-		MaxIdle:     3,
-		IdleTimeout: 240 * time.Second,
-		Dial: func() (redis.Conn, error) {
-			return redis.Dial("tcp", cfg.RedisHost)
-		},
+		// test redis connection
+		conn := redisPool.Get()
+		_, err = conn.Do("PING")
+		if err != nil {
+			log.WithFields(log.Fields{
+				"error": err,
+			}).Fatal("Can't establish a connection to the redis server")
+			return
+		}
+		conn.Close()
 	}
-	defer redisPool.Close()
-
-	// test redis connection
-	conn := redisPool.Get()
-	_, err = conn.Do("PING")
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Fatal("Can't establish a connection to the redis server")
-		return
-	}
-	conn.Close()
 
 	// Create a discord session
 	log.Info("Starting discord session...")
@@ -702,7 +687,6 @@ func main() {
 	}
 
 	discord.AddHandler(onReady)
-	discord.AddHandler(onGuildCreate)
 	discord.AddHandler(onMessageCreate)
 
 	err = discord.Open()
