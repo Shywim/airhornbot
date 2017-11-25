@@ -1,0 +1,20 @@
+FROM golang:1.9.2-alpine3.6
+
+VOLUME ["/config", "/data", "/plugins"]
+
+WORKDIR /go/src/github.com/Shywim/airhornbot
+COPY . .
+
+RUN apk add --no-cache git
+RUN go get -u -d github.com/magefile/mage \
+	&& cd $GOPATH/src/github.com/magefile/mage \
+	&& go run bootstrap.go
+
+RUN mage AirhornBot
+
+RUN ln -s $GOPATH/src/github.com/Shywim/airhornbot/config /config
+RUN ln -s $GOPATH/src/github.com/Shywim/airhornbot/data /data
+RUN ln -s $GOPATH/src/github.com/Shywim/airhornbot/plugins /plugins
+
+CMD ["airhornbot"]
+
