@@ -54,15 +54,14 @@ type airhornPlugin struct {
 	getSound func(string) [][]byte
 }
 
-// Play represents an individual use of the !airhorn command
-type Play struct {
+type play struct {
 	GuildID   string
 	ChannelID string
 	UserID    string
 	Sound     *service.Sound
 
 	// The next play to occur after this, only used for chaining sounds like anotha
-	Next *Play
+	Next *play
 
 	// If true, this was a forced play using a specific airhorn sound name
 	Forced bool
@@ -177,7 +176,12 @@ func loadSound(s *service.Sound) (buffer [][]byte, err error) {
 
 func doPlay(soundData [][]byte, vc *discordgo.VoiceConnection) {
 	_ = vc.Speaking(true)
-	defer vc.Speaking(false)
+	defer func() {
+		err := vc.Speaking(false)
+		if err != nil {
+			log.WithError(err).Warning("Error while stopping speaking")
+		}
+	}()
 
 	for _, buff := range soundData {
 		vc.OpusSend <- buff
@@ -185,7 +189,7 @@ func doPlay(soundData [][]byte, vc *discordgo.VoiceConnection) {
 }
 
 // Prepares a play
-func createPlay(user *discordgo.User, guild *discordgo.Guild, coll []*service.Sound) *Play {
+func createPlay(user *discordgo.User, guild *discordgo.Guild, coll []*service.Sound) *play {
 	// Grab the users voice channel
 	channel := getCurrentVoiceChannel(user, guild)
 	if channel == nil {
@@ -197,7 +201,7 @@ func createPlay(user *discordgo.User, guild *discordgo.Guild, coll []*service.So
 	}
 
 	// Create the play
-	play := &Play{
+	play := &play{
 		GuildID:   guild.ID,
 		ChannelID: channel.ID,
 		UserID:    user.ID,
@@ -211,8 +215,8 @@ func createPlay(user *discordgo.User, guild *discordgo.Guild, coll []*service.So
 
 // Prepares and enqueues a play into the ratelimit/buffer guild queue
 func enqueuePlay(user *discordgo.User, guild *discordgo.Guild, sounds []*service.Sound, cid string) {
-	play := createPlay(user, guild, sounds)
-	if play == nil {
+	p := createPlay(user, guild, sounds)
+	if p == nil {
 		return
 	}
 
@@ -220,113 +224,147 @@ func enqueuePlay(user *discordgo.User, guild *discordgo.Guild, sounds []*service
 	tmp, ok := queues.Load(guild.ID)
 
 	if ok && tmp != nil {
-		queue, _ := tmp.(chan *Play)
+		queue, _ := tmp.(chan *play)
 		if len(queue) < maxQueueSize {
-			queue <- play
+			queue <- p
 		}
 	} else {
-		queues.Store(guild.ID, make(chan *Play, maxQueueSize))
-		playSound(play, nil, cid)
+		queues.Store(guild.ID, make(chan *play, maxQueueSize))
+		playSound(p, nil, cid)
 	}
 }
 
-func trackSoundStats(play *Play) {
+func trackSoundStats(p *play) {
 	if redisPool == nil {
 		return
 	}
 
 	conn := redisPool.Get()
-	defer conn.Close()
+	defer func() {
+		err := conn.Close()
+		if err != nil {
+			log.WithError(err).Warning("Couldn't connect to redis to track stats")
+		}
+	}()
 
-	redisSoundID := play.Sound.ID
+	redisSoundID := p.Sound.ID
 	// use sound name for stats only if this is a default sound (no ID)
 	if redisSoundID == "" {
-		redisSoundID = play.Sound.Name
+		redisSoundID = p.Sound.Name
 	}
 
-	conn.Send("INCR", fmt.Sprintf("airhorn:total"))
-	conn.Send("INCR", fmt.Sprintf("airhorn:guild:%s:plays", play.GuildID))
-	conn.Send("INCR", fmt.Sprintf("airhorn:guild:%s:soundstats:%s", play.GuildID, redisSoundID))
-	conn.Send("SAdd", fmt.Sprintf("airhorn:users"), play.UserID)
-	conn.Send("SAdd", fmt.Sprintf("airhorn:guilds"), play.GuildID)
-	conn.Send("SAdd", fmt.Sprintf("airhorn:channels"), play.ChannelID)
-	err := conn.Flush()
+	var err error
+	if err = conn.Send("INCR", fmt.Sprintf("airhorn:total")); err != nil {
+		log.WithError(err).Warning("failed to increment total count in redis")
+	}
+	if err = conn.Send("INCR", fmt.Sprintf("airhorn:guild:%s:plays", p.GuildID)); err != nil {
+		log.WithError(err).Warning("failed to increment guild play count in redis")
+	}
+	if err = conn.Send("INCR", fmt.Sprintf("airhorn:guild:%s:soundstats:%s", p.GuildID, redisSoundID)); err != nil {
+		log.WithError(err).Warning("failed to increment guild play count in redis")
+	}
+	if err = conn.Send("SAdd", fmt.Sprintf("airhorn:users"), p.UserID); err != nil {
+		log.WithError(err).Warning("failed to increment user count in redis")
+	}
+	if err = conn.Send("SAdd", fmt.Sprintf("airhorn:guilds"), p.GuildID); err != nil {
+		log.WithError(err).Warning("failed to increment guilds count in redis")
+	}
+	if err = conn.Send("SAdd", fmt.Sprintf("airhorn:channels"), p.ChannelID); err != nil {
+		log.WithError(err).Warning("failed to increment channels count in redis")
+	}
+
+	err = conn.Flush()
 	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Warning("Failed to track stats in redis")
+		log.WithError(err).Warning("Failed to track stats in redis")
 	}
 }
 
 // Play a sound
-func playSound(play *Play, vc *discordgo.VoiceConnection, cid string) (err error) {
+func playSound(p *play, vc *discordgo.VoiceConnection, cid string) {
 	log.WithFields(log.Fields{
-		"play": play,
+		"p": p,
 	}).Info("Playing sound")
 
 	// load sound file
-	soundData, err := loadSound(play.Sound)
+	soundData, err := loadSound(p.Sound)
 	if err != nil {
 		log.WithError(err).Error("Failed to read sound file")
 		return
 	}
 
 	if vc == nil {
-		vc, err = voiceConnect(play.GuildID, play.ChannelID)
-		// vc.Receive = false
+		vc, err = voiceConnect(p.GuildID, p.ChannelID)
+
 		if err != nil {
-			log.WithFields(log.Fields{
-				"error": err,
-			}).Error("Failed to play sound")
-			queues.Delete(play.GuildID)
-			return err
+			log.WithError(err).Error("Failed to play sound")
+			queues.Delete(p.GuildID)
+
+			err = vc.Disconnect()
+			if err != nil {
+				log.WithError(err).Error("Failed to disconnect from voice channel")
+			}
+			return
 		}
 	}
 
 	// If we need to change channels, do that now
-	if vc.ChannelID != play.ChannelID {
-		vc.ChangeChannel(play.ChannelID, false, false)
+	if vc.ChannelID != p.ChannelID {
+		err = vc.ChangeChannel(p.ChannelID, false, false)
+		if err != nil {
+			log.WithError(err).Error("Failed to connect to voice channel")
+			err = vc.Disconnect()
+			if err != nil {
+				log.WithError(err).Error("Failed to disconnect from voice channel")
+			}
+			return
+		}
 		time.Sleep(time.Millisecond * 125)
 	}
 
-	// Track stats for this play in redis
-	go trackSoundStats(play)
+	// Track stats for this p in redis
+	go trackSoundStats(p)
 
-	// Sleep for a specified amount of time before playing the sound
+	// Sleep for a specified amount of time before ping the sound
 	time.Sleep(time.Millisecond * 32)
 
 	// Send gif if present
-	if play.Sound.Gif != "" {
-		discord.ChannelMessageSend(cid, play.Sound.Gif)
+	if p.Sound.Gif != "" {
+		_, err = discord.ChannelMessageSend(cid, p.Sound.Gif)
+		if err != nil {
+			log.WithError(err).Warning("Failed to send gif to text channel")
+		}
 	}
 
 	// Play the sound
 	doPlay(soundData, vc)
 
-	// If there is another song in the queue, recurse and play that
-	tmp, exists := queues.Load(play.GuildID)
+	// If there is another song in the queue, recurse and p that
+	tmp, exists := queues.Load(p.GuildID)
 
 	if exists {
-		queue := tmp.(chan *Play)
+		queue := tmp.(chan *play)
 		if len(queue) > 0 {
-			play := <-queue
-			playSound(play, vc, cid)
-			return nil
+			p := <-queue
+			playSound(p, vc, cid)
+			return
 		}
 
 		close(queue)
 	}
 
 	// If the queue is empty, delete it
-	queues.Delete(play.GuildID)
+	queues.Delete(p.GuildID)
 	time.Sleep(time.Millisecond * time.Duration(250))
 	voiceDisconnect(vc)
-	return nil
+	return
 }
 
 func onReady(s *discordgo.Session, event *discordgo.Ready) {
 	log.Info("Recieved READY payload")
-	s.UpdateStatus(0, "airhorn.shywim.fr")
+	err := s.UpdateStatus(0, "airhorn.shywim.fr")
+	if err != nil {
+		log.WithError(err).Warning("Couldn't set status line")
+	}
 }
 
 func scontains(key string, options ...string) bool {
@@ -359,8 +397,16 @@ func displayBotStats(cid string) {
 	fmt.Fprintf(w, "Servers: \t%d\n", len(discord.State.Ready.Guilds))
 	fmt.Fprintf(w, "Users: \t%d\n", users)
 	fmt.Fprintf(w, "```\n")
-	w.Flush()
-	discord.ChannelMessageSend(cid, buf.String())
+	err := w.Flush()
+	if err != nil {
+		log.WithError(err).Error("Error while building stats message")
+		return
+	}
+
+	_, err = discord.ChannelMessageSend(cid, buf.String())
+	if err != nil {
+		log.WithError(err).Error("Error while sending stats message")
+	}
 }
 
 /*func displayBotCommands(cid string) {
@@ -419,7 +465,11 @@ func displayUserStats(cid, uid string) {
 		}).Error("Error reading stats")
 		return
 	}
-	discord.ChannelMessageSend(cid, fmt.Sprintf("Total Airhorns: %v", totalAirhorns))
+
+	_, err = discord.ChannelMessageSend(cid, fmt.Sprintf("Total Airhorns: %v", totalAirhorns))
+	if err != nil {
+		log.WithError(err).Error("Error sending user stats message")
+	}
 }
 
 func displayServerStats(cid, sid string) {
@@ -436,7 +486,11 @@ func displayServerStats(cid, sid string) {
 		}).Error("Error reading stats")
 		return
 	}
-	discord.ChannelMessageSend(cid, fmt.Sprintf("Total Airhorns: %v", totalAirhorns))
+
+	_, err = discord.ChannelMessageSend(cid, fmt.Sprintf("Total Airhorns: %v", totalAirhorns))
+	if err != nil {
+		log.WithError(err).Error("Error sending server stats message")
+	}
 }
 
 func utilGetMentioned(s *discordgo.Session, m *discordgo.MessageCreate) *discordgo.User {
@@ -450,7 +504,10 @@ func utilGetMentioned(s *discordgo.Session, m *discordgo.MessageCreate) *discord
 
 func airhornBomb(cid string, guild *discordgo.Guild, user *discordgo.User, cs string) {
 	count, _ := strconv.Atoi(cs)
-	discord.ChannelMessageSend(cid, ":ok_hand:"+strings.Repeat(":trumpet:", count))
+	_, err := discord.ChannelMessageSend(cid, ":ok_hand:"+strings.Repeat(":trumpet:", count))
+	if err != nil {
+		log.WithError(err).Warning("Error sending bomb message")
+	}
 
 	// Cap it at something
 	if count > 100 {
@@ -662,7 +719,12 @@ func main() {
 				return redis.Dial("tcp", cfg.RedisHost)
 			},
 		}
-		defer redisPool.Close()
+		defer func() {
+			err := redisPool.Close()
+			if err != nil {
+				log.WithError(err).Error("Couldn't close redis pool connection")
+			}
+		}()
 
 		// test redis connection
 		conn := redisPool.Get()
@@ -673,7 +735,11 @@ func main() {
 			}).Fatal("Can't establish a connection to the redis server")
 			return
 		}
-		conn.Close()
+
+		err = conn.Close()
+		if err != nil {
+			log.WithError(err).Error("Couldn't close redis connection")
+		}
 	}
 
 	// Create a discord session
@@ -705,5 +771,8 @@ func main() {
 	signal.Notify(c, os.Interrupt, os.Kill)
 	<-c
 
-	discord.Close()
+	err = discord.Close()
+	if err != nil {
+		log.WithError(err).Error("Couldn't close discord session")
+	}
 }
