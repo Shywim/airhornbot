@@ -654,7 +654,7 @@ func loadPlugins(pluginsPath string) {
 
 	for _, file := range files {
 		if !file.IsDir() && strings.Contains(file.Name(), ".so") {
-			p, err := plugin.Open(pluginsPath + file.Name())
+			p, err := plugin.Open(pluginsPath + string(os.PathSeparator) + file.Name())
 			if err != nil {
 				log.WithFields(log.Fields{
 					"error":  err,
@@ -702,7 +702,8 @@ func loadPlugins(pluginsPath string) {
 }
 
 func main() {
-	cfg, err := service.LoadConfig()
+	var err error
+	cfg, err = service.LoadConfig()
 	if err != nil {
 		log.WithError(err).Fatal("Couldn't load configuration")
 	}
