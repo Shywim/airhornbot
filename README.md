@@ -4,7 +4,7 @@ and new features.
 # Airhorn Bot
 Airhorn is an example implementation of the [Discord API](https://discordapp.com/developers/docs/intro).
 Airhorn bot utilizes the [discordgo](https://github.com/bwmarrin/discordgo) library, a free and open source
-library. Airhorn Bot requires Go 1.4 or higher.
+library. Airhorn Bot requires Go 1.8 or higher.
 
 ## Usage
 
@@ -15,72 +15,33 @@ click *Add to Discord*!
 
 Mention the bot with 'help' as message for a list of commands! (e.g.: `@Airhorn help`)
 
-## Features coming
+## Self host
 
-- Enable users to upload their sounds to use in their respective servers
-- Update dependencies and code cleanup
+Airhorn Bot has two components, a bot client that handles the playing of loyal airhorns,
+and a web server to connect the bot to a discord server and manage custom clips.
 
-## Building
+### Using Docker
 
-Airhorn Bot has two components, a bot client that handles the playing of loyal airhorns, and a web server
-that implements OAuth2 and stats.
+ - **The bot**
+
+     docker run -d --name airhornbot \
+     	-v /etc/airhornbot:/etc/airhornbot \
+	-v /etc/airhornbot/plugins:/etc/airhornbot/plugins \
+	-v airhornbot-data:/data \
+	--link airhornbot-redis:redis \
+	--link airhornbot-db:db \
+	airhornbot:bot-latest
+
+ - **Web application**
+
+     docker run -d --name airhornweb -p 14000:14000 \
+     	-v /etc/airhornbot:/etc/airhornbot \
+	-v airhornbot-data:/data \
+	--link airhornbot-redis:redis \
+	--link airhornbot-db:db \
+	airhornbot:web-latest
 
 ### Get the bot
 
-**Using `go get`:**
+	// TODO
 
-```
-go get github.com/shywim/airhornbot
-go install github.com/shywim/airhornbot
-```
-
-**Using `git`:**
-
-`git clone https://github.com/shywim/airhornbot`
-
-You can also download the archive from here.
-
-### Make
-
-Run `make bot` to obtain the bot server build.  
-Run `make web` to obtain the web server build.  
-Run `make all` to obtain all the builds. Simple, right?
-
-This should spawn a `bot` executable file and/or a `web` executable file in the sources' root.
-
-## Running the Bot
-
-```
-./bot -r "localhost:6379" -t "BOT_USER_TOKEN" -o "OWNER_ID"
-```
-
-**-r [OPTIONAL]:**
-
-Address of your redis instance, to store stats about your bot usage.
-
-**-t:**
-
-Your bot account token founds in your developer account.
-
-**-o [OPTIONAL]:**
-
-The owner id (generally yours). To obtain your ID, enable developers settings in discord then right click on
-your name then click on "Copy ID". Or you can also type `\@YOUR_NAME` in chat.
-
-## Running the Web Server
-
-```
-./airhornweb -r "localhost:6379" -i "APP_CLIENT_ID" -s "APP_CLIENT_SECRET"
-```
-
-**-r [OPTIONAL]:**
-
-Address of your redis instance, to store stats about your bot usage.
-
-**-i:**
-
-Your app's client id found in your developer account.
-
-**-s:**
-
-Your app's secret token found in your developer account.
