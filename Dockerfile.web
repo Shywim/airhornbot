@@ -1,6 +1,6 @@
 FROM golang:1.9.2-alpine3.6
 
-VOLUME ["/config", "/data"]
+VOLUME ["/etc/airhornbot", "/data"]
 
 WORKDIR /go/src/github.com/Shywim/airhornbot
 COPY . .
@@ -11,9 +11,6 @@ RUN go get -u -d github.com/magefile/mage \
 	&& go run bootstrap.go
 
 RUN mage AirhornWeb
-
-RUN ln -s $GOPATH/src/github.com/Shywim/airhornbot/config /config
-RUN ln -s $GOPATH/src/github.com/Shywim/airhornbot/data /data
 
 CMD ["airhornweb"]
 

@@ -48,7 +48,7 @@
       <tr>
         <td><img src="{{ $g.Icon }}" class="guild-logo"></td>
         <td><b>{{ $g.Name }}</b></td>
-        <td><a href="{{ .Context.SiteURL }}/login?guild_id={{ $g.ID }}" class="button">Login &gt;</a></td>
+        <td><a href="{{ $ctx.Context.SiteURL }}/login?guild_id={{ $g.ID }}" class="button">Login &gt;</a></td>
       </tr>
       {{ end }}
       </tbody>
