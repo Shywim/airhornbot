@@ -12,6 +12,6 @@ airhornweb
 vendor/
 config/config.toml
 *.exe
+data/
+plugins/
 
-web-app/public/js
-web-app/public/css

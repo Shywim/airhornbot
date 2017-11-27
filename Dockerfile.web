@@ -5,7 +5,7 @@ VOLUME ["/etc/airhornbot", "/data"]
 WORKDIR /go/src/github.com/Shywim/airhornbot
 COPY . .
 
-RUN apk add --no-cache git
+RUN apk add --no-cache git ffmpeg
 RUN go get -u -d github.com/magefile/mage \
 	&& cd $GOPATH/src/github.com/magefile/mage \
 	&& go run bootstrap.go
