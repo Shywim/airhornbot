@@ -4,8 +4,8 @@ services:
   - docker:dind
   
 variables:
-  BOT_IMAGE_NAME: "$CI_REGISTRY_IMAGE"/bot
-  WEB_IMAGE_NAME: "$CI_REGISTRY_IMAGE"/web
+  BOT_IMAGE_NAME: "${CI_REGISTRY_IMAGE}/bot"
+  WEB_IMAGE_NAME: "${CI_REGISTRY_IMAGE}/web"
   
 stages:
  - build
