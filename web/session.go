@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Shywim/airhornbot/service"
+	"gitlab.com/Shywim/airhornbot/service"
 	log "github.com/Sirupsen/logrus"
 	"github.com/bwmarrin/discordgo"
 	"github.com/gorilla/sessions"

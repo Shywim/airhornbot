@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/Shywim/airhornbot/service"
+	"gitlab.com/Shywim/airhornbot/service"
 	log "github.com/Sirupsen/logrus"
 	"github.com/oxtoacart/bpool"
 )

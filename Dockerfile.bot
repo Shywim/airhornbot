@@ -2,7 +2,7 @@ FROM golang:1.9.2-alpine3.6
 
 VOLUME ["/etc/airhornbot", "/data", "/etc/airhornbot/plugins"]
 
-WORKDIR /go/src/github.com/Shywim/airhornbot
+WORKDIR /go/src/gitlab.com/Shywim/airhornbot
 COPY . .
 
 # go plugin package requires CGO
@@ -13,5 +13,5 @@ RUN go get -u -d github.com/magefile/mage \
 
 RUN mage AirhornBot
 
-CMD ["/go/src/github.com/Shywim/airhornbot/airhornbot"]
+CMD ["/go/src/gitlab.com/Shywim/airhornbot/airhornbot"]
 

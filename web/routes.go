@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Shywim/airhornbot/service"
+	"gitlab.com/Shywim/airhornbot/service"
 	log "github.com/Sirupsen/logrus"
 	"github.com/jonas747/dca"
 	"github.com/julienschmidt/httprouter"

@@ -30,7 +30,7 @@ and a web server to connect the bot to a discord server and manage custom clips.
 	-v airhornbot-data:/data \
 	--link airhornbot-redis:redis \
 	--link airhornbot-db:db \
-	airhornbot:bot-latest
+	registry.gitlab.com/Shywim/airhornbot/bot:latest
 
  - **Web application**
 
@@ -39,7 +39,7 @@ and a web server to connect the bot to a discord server and manage custom clips.
 	-v airhornbot-data:/data \
 	--link airhornbot-redis:redis \
 	--link airhornbot-db:db \
-	airhornbot:web-latest
+	registry.gitlab.com/Shywim/airhornbot/web:latest
 
 ### Get the bot
 

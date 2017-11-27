@@ -2,7 +2,7 @@ FROM golang:1.9.2-alpine3.6
 
 VOLUME ["/etc/airhornbot", "/data"]
 
-WORKDIR /go/src/github.com/Shywim/airhornbot
+WORKDIR /go/src/gitlab.com/Shywim/airhornbot
 COPY . .
 
 RUN apk add --no-cache git ffmpeg
@@ -12,5 +12,5 @@ RUN go get -u -d github.com/magefile/mage \
 
 RUN mage AirhornWeb
 
-CMD ["airhornweb"]
+CMD ["/go/src/gitlab.com/Shywim/airhornbot/airhornweb"]
 
