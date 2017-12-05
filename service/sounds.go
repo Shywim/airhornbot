@@ -176,6 +176,7 @@ func GetSoundsByCommand(command, guildID string) ([]*Sound, error) {
 	}
 
 	rows, err := db.Query("SELECT soundId FROM command WHERE guildId = $1 AND command = $2", guildID, command)
+	defer rows.Close()
 	if err != nil {
 		return nil, err
 	}
@@ -210,6 +211,7 @@ func GetSoundsByGuild(guildID string) ([]*Sound, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	return buildSounds(db, rows)
 }

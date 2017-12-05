@@ -14,4 +14,5 @@ config/config.toml
 *.exe
 data/
 plugins/
+docker-compose.yml
 
