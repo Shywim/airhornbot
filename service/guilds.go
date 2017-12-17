@@ -1,7 +1,7 @@
 package service
 
 import (
-  "errors"
+	"errors"
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
@@ -12,6 +12,7 @@ const (
 	permAdministrator = 8
 )
 
+// Guild represents a discord server
 type Guild struct {
 	ID     string   `json:"id"`
 	Name   string   `json:"name"`
@@ -19,6 +20,7 @@ type Guild struct {
 	Sounds []*Sound `json:"sounds"`
 }
 
+// UserGuilds represents a user's guilds
 type UserGuilds struct {
 	AirhornGuilds []*Guild
 	BoringGuilds  []*Guild
@@ -32,34 +34,36 @@ func AddGuild(gID string) error {
 	return err
 }
 
+// GetGuildWithSounds retrieves a guild from Discord and its sounds
 func GetGuildWithSounds(session *discordgo.Session, gID string) (Guild, error) {
-  guilds, err := session.UserGuilds(100, "", "")
+	guilds, err := session.UserGuilds(100, "", "")
 	if err != nil {
 		return Guild{}, err
 	}
 
-  for _, g := range guilds {
-  if g.ID != gID {
-    continue
-    }
-	guild := Guild{
-		ID:   g.ID,
-		Name: g.Name,
-		Icon: fmt.Sprintf("https://cdn.discordapp.com/icons/%v/%v.png",
-			g.ID, g.Icon),
-	}
+	for _, g := range guilds {
+		if g.ID != gID {
+			continue
+		}
+		guild := Guild{
+			ID:   g.ID,
+			Name: g.Name,
+			Icon: fmt.Sprintf("https://cdn.discordapp.com/icons/%v/%v.png",
+				g.ID, g.Icon),
+		}
 
-	sounds, err := GetSoundsByGuild(g.ID)
-	if err != nil {
-		return Guild{}, err
-	}
-	guild.Sounds = sounds
+		sounds, err := GetSoundsByGuild(g.ID)
+		if err != nil {
+			return Guild{}, err
+		}
+		guild.Sounds = sounds
 
-	return guild, nil
-  }
-  return Guild{}, errors.New("no guild found")
+		return guild, nil
+	}
+	return Guild{}, errors.New("no guild found")
 }
 
+// GetGuildsWithSounds retrieves a guild from Discord and its sounds
 func GetGuildsWithSounds(session *discordgo.Session) (interface{}, error) {
 	guilds, err := session.UserGuilds(100, "", "")
 	if err != nil {
@@ -101,6 +105,7 @@ func GetGuildsWithSounds(session *discordgo.Session) (interface{}, error) {
 	}, nil
 }
 
+// GuildHasAirhorn checks if a guild has already been used with airhorn
 func GuildHasAirhorn(gID string) (bool, error) {
 	conn := redisPool.Get()
 	defer conn.Close()

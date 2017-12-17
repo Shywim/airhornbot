@@ -1,16 +1,16 @@
 package service
 
 import (
-	"database/sql"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Sound represents a sound clip
 type Sound struct {
 	ID      string `json:"id"`
-	GuildID string
+	GuildID string `json:"guildId"`
 	Name    string `json:"name"`
 
 	// Link to a gif url
@@ -23,37 +23,40 @@ type Sound struct {
 	Commands       []string `json:"commands"`
 	CommandsString string
 
-	FilePath string
+	FilePath string `json:"filepath"`
 }
 
-// SaveSound saves a sound to the db
-func SaveSound(gID string, s *Sound, commands []string) error {
-	db, err := getDB()
+// Save saves a sound to the db
+func (s *Sound) Save() error {
+	tx, err := db.Beginx()
 	if err != nil {
 		return err
 	}
+	isNew := s.ID == ""
 
-	tx, err := db.Begin()
-	if err != nil {
-		return err
+	if isNew {
+		q := tx.Rebind(`INSERT INTO sound (guildID, name, gif, weight, filepath) VALUES (?, ?, ?, ?, ?)`)
+		s.ID, err = insertGetID(tx, q, s.GuildID, s.Name, s.Gif, s.Weight)
+	} else {
+		q := tx.Rebind("UPDATE sound SET name = ?, gif = ?, weight = ? WHERE id = ? AND guildId = ?")
+		_, err = tx.Exec(q, s.Name, s.Gif, s.Weight, s.ID, s.GuildID)
 	}
-
-	res, err := tx.Exec(`INSERT INTO sound (guildID, name, gif, weight, filepath) VALUES ($1, $2, $3, $4, $5)`,
-		gID,
-		s.Name,
-		s.Gif,
-		s.Weight)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
-	soundID := res.LastInsertId
 
-	for command := range commands {
-		res, err = tx.Exec("INSERT INTO command (soundId, guildId, command) VALUES ($1, $2, $3)",
-			soundID,
-			gID,
-			command)
+	if !isNew {
+		// delete every command associated to the sound
+		_, err = tx.Exec("DELETE FROM command WHERE soundId = ? AND guildId = ?", s.ID, s.GuildID)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	for command := range s.Commands {
+		q := tx.Rebind("INSERT INTO command (soundId, guildId, command) VALUES (?, ?, ?)")
+		_, err = tx.Exec(q, s.ID, s.GuildID, command)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -85,115 +88,66 @@ func SaveAudio(a io.Reader, n string) error {
 	return nil
 }
 
-// UpdateSound update a sound in DB
-func UpdateSound(gID string, sID string, s *Sound, commands []string) error {
-	db, err := getDB()
-	if err != nil {
-		return err
-	}
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.Exec("UPDATE sound SET guildID = $1, name = $2, gif = $3, weight = $4 WHERE id = $5",
-		gID,
-		s.Name,
-		s.Gif,
-		s.Weight,
-		sID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// delete every command associated to the sound
-	_, err = tx.Exec("DELETE FROM command WHERE soundId = $1 AND guildId = $2", sID, gID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// add new commands
-	for command := range commands {
-		_, err = tx.Exec("INSERT INTO command (soundId, guildId, command) VALUES ($1, $2, $3)",
-			sID,
-			gID,
-			command)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-
-	return tx.Commit()
-}
-
-// DeleteSound delete a sound from the DB
-func DeleteSound(gID string, sID string) error {
+// Delete delete a sound from the DB
+func (s *Sound) Delete() error {
 	// TODO: delete also the sound file?
-	db, err := getDB()
-	if err != nil {
-		return err
-	}
-
-	_, err = db.Exec("DELETE FROM sound WHERE id = $1 AND guildId = $2", sID, gID)
+	q := db.Rebind("DELETE FROM sound WHERE id = ? AND guildId = ?")
+	_, err := db.Exec(q, s.ID, s.GuildID)
 
 	return err
 }
 
+// getCommands retrieve a sound's commands from database
+func (s *Sound) getCommands() error {
+	q := db.Rebind("SELECT command FROM command WHERE soundId = ?")
+	rows, err := db.Query(q, s.ID)
+	if err != nil {
+		return err
+	}
+
+	for rows.Next() {
+		var command string
+		rows.Scan(&command)
+		s.Commands = append(s.Commands, command)
+	}
+
+	s.CommandsString = strings.Join(s.Commands[:], ", ")
+	return nil
+}
+
+// GetSound retrieve a sound from database
 func GetSound(ID string) (*Sound, error) {
-	db, err := getDB()
-	if err != nil {
+	var s Sound
+	q := db.Rebind("SELECT * FROM sound WHERE id = ?")
+	if err := db.QueryRowx(q, ID).StructScan(&s); err != nil {
 		return nil, err
 	}
 
-	row := db.QueryRow("SELECT id, name, weight, filepath FROM sound WHERE id = $1", ID)
-
-	sound, err := buildSound(row)
-	if err != nil {
+	if err := s.getCommands(); err != nil {
 		return nil, err
 	}
 
-	row = db.QueryRow("SELECT command FROM command WHERE soundId = $1", ID)
-
-	var command string
-	if err := row.Scan(&command); err != nil {
-		return nil, err
-	}
-	sound.Commands = []string{command}
-	sound.CommandsString = command
-
-	return sound, nil
+	return &s, nil
 }
 
 // GetSoundsByCommand return all sounds for a given command
 func GetSoundsByCommand(command, guildID string) ([]*Sound, error) {
-	db, err := getDB()
+	q := db.Rebind("SELECT soundId FROM command WHERE guildId = ? AND command = ?")
+	rows, err := db.Queryx(q, guildID, command)
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := db.Query("SELECT soundId FROM command WHERE guildId = $1 AND command = $2", guildID, command)
-	defer rows.Close()
-	if err != nil {
-		return nil, err
-	}
-
+	q = db.Rebind("SELECT id, name, weight, filepath FROM sound WHERE id = ?")
 	var sounds []*Sound
 	for rows.Next() {
 		var soundID int
-		if err := rows.Scan(&soundID); err != nil {
-			return nil, err
-		}
+		rows.Scan(&soundID)
 
-		row := db.QueryRow("SELECT id, name, weight, filepath FROM sound WHERE id = $1", soundID)
+		row := db.QueryRowx(q, soundID)
 
-		sound, err := buildSound(row)
-		if err != nil {
-			return nil, err
-		}
+		var sound *Sound
+		row.StructScan(sound)
 		sounds = append(sounds, sound)
 	}
 
@@ -202,18 +156,24 @@ func GetSoundsByCommand(command, guildID string) ([]*Sound, error) {
 
 // GetSoundsByGuild return all sounds for a given Guild
 func GetSoundsByGuild(guildID string) ([]*Sound, error) {
-	db, err := getDB()
+	q := db.Rebind("SELECT id, name, weight, filepath FROM sound WHERE guildId = ?")
+	rows, err := db.Queryx(q, guildID)
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := db.Query("SELECT id, name, weight, filepath FROM sound WHERE guildId = $1", guildID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+	var sounds []*Sound
+	for rows.Next() {
+		var sound *Sound
+		rows.StructScan(sound)
+		sounds = append(sounds, sound)
 
-	return buildSounds(db, rows)
+		if err = sound.getCommands(); err != nil {
+			return nil, err
+		}
+	}
+
+	return sounds, nil
 }
 
 // FilterByCommand filter a sound array by command
@@ -228,51 +188,6 @@ func FilterByCommand(c string, s []*Sound) (r []*Sound) {
 	}
 
 	return r
-}
-
-func buildSound(row *sql.Row) (*Sound, error) {
-	var sound Sound
-	var gif sql.NullString // gif can be null
-	if err := row.Scan(&sound.ID, &sound.Name, &sound.Weight, &sound.FilePath); err != nil {
-		return nil, err
-	}
-
-	sound.Gif = gif.String
-	return &sound, nil
-}
-
-func buildSounds(db *sql.DB, rows *sql.Rows) ([]*Sound, error) {
-	var sounds []*Sound
-	for rows.Next() {
-		var sound Sound
-		if err := rows.Scan(&sound.ID, &sound.Name, &sound.Weight, &sound.FilePath); err != nil {
-			return nil, err
-		}
-
-		commandsRows, err := db.Query("SELECT command FROM command WHERE soundId = $1", sound.ID)
-		if err != nil {
-			return nil, err
-		}
-
-		var commands []string
-		for commandsRows.Next() {
-			var command string
-			if err := commandsRows.Scan(&command); err != nil {
-				return nil, err
-			}
-
-			commands = append(commands, command)
-			if sound.CommandsString != "" {
-				sound.CommandsString = sound.CommandsString + ","
-			}
-			sound.CommandsString = sound.CommandsString + command
-		}
-		sound.Commands = commands
-
-		sounds = append(sounds, &sound)
-	}
-
-	return sounds, nil
 }
 
 // DefaultSounds are a set of default sounds available to every servers

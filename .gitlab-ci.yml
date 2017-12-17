@@ -29,3 +29,21 @@ docker-web:
   only:
     - tags
     
+docker-bot:
+  stage: build
+  script:
+    - docker build --pull -t "$BOT_IMAGE_NAME":latest -f Dockerfile.bot .
+    - docker push "$BOT_IMAGE_NAME":latest
+  except:
+    - tags
+
+docker-web:
+  stage: build
+  script:
+    - docker build --pull -t "$WEB_IMAGE_NAME":latest -f Dockerfile.web .
+    - docker push "$WEB_IMAGE_NAME":latest
+  except:
+    - tags
+  only:
+    - pushes
+
