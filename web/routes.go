@@ -7,11 +7,11 @@ import (
 	"os"
 	"strings"
 
-	"gitlab.com/Shywim/airhornbot/service"
 	log "github.com/Sirupsen/logrus"
 	"github.com/jonas747/dca"
 	"github.com/julienschmidt/httprouter"
 	uuid "github.com/satori/go.uuid"
+	"gitlab.com/Shywim/airhornbot/service"
 	"golang.org/x/oauth2"
 )
 
@@ -277,21 +277,26 @@ func EditSoundPostRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 			Name:     r.MultipartForm.Value["name"][0],
 			Weight:   weight,
 			FilePath: soundID,
+			GuildID:  guildID,
+			Commands: strings.Split(commands, ","),
 		}
 
-		err = service.SaveSound(guildID, &sound, strings.Split(commands, ","))
+		err = sound.Save()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	} else {
 		sound := service.Sound{
+			ID:       soundID,
 			Name:     r.MultipartForm.Value["name"][0],
 			Weight:   weight,
 			FilePath: soundID,
+			GuildID:  guildID,
+			Commands: strings.Split(commands, ","),
 		}
 
-		err = service.UpdateSound(guildID, soundID, &sound, strings.Split(commands, ","))
+		err = sound.Save()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
