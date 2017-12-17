@@ -117,7 +117,7 @@ func (s *Sound) getCommands() error {
 
 // GetSound retrieve a sound from database
 func GetSound(ID string) (*Sound, error) {
-	var s Sound
+	s := Sound{}
 	q := db.Rebind("SELECT * FROM sound WHERE id = ?")
 	if err := db.QueryRowx(q, ID).StructScan(&s); err != nil {
 		return nil, err
@@ -146,9 +146,9 @@ func GetSoundsByCommand(command, guildID string) ([]*Sound, error) {
 
 		row := db.QueryRowx(q, soundID)
 
-		var sound *Sound
-		row.StructScan(sound)
-		sounds = append(sounds, sound)
+		sound := Sound{}
+		row.StructScan(&sound)
+		sounds = append(sounds, &sound)
 	}
 
 	return sounds, nil
@@ -164,9 +164,9 @@ func GetSoundsByGuild(guildID string) ([]*Sound, error) {
 
 	var sounds []*Sound
 	for rows.Next() {
-		var sound *Sound
-		rows.StructScan(sound)
-		sounds = append(sounds, sound)
+		sound := Sound{}
+		rows.StructScan(&sound)
+		sounds = append(sounds, &sound)
 
 		if err = sound.getCommands(); err != nil {
 			return nil, err
