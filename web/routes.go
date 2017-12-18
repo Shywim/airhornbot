@@ -98,6 +98,11 @@ func ManageRoute(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 
 	session := GetDiscordSession(token)
+	if session == nil {
+		AskLoginRoute(w, r, nil)
+		return
+	}
+
 	userGuilds, err := service.GetGuildsWithSounds(session)
 	if err != nil {
 		// TODO: error
