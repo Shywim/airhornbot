@@ -17,12 +17,12 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"gitlab.com/Shywim/airhornbot/service"
 	log "github.com/Sirupsen/logrus"
 	"github.com/bwmarrin/discordgo"
 	"github.com/dustin/go-humanize"
 	"github.com/garyburd/redigo/redis"
 	"github.com/jonas747/dca"
+	"gitlab.com/Shywim/airhornbot/service"
 )
 
 var (
@@ -460,9 +460,7 @@ func displayUserStats(cid, uid string) {
 
 	totalAirhorns, err := utilSumRedisKeys(keys.([]string))
 	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Error("Error reading stats")
+		log.WithError(err).Error("Error reading stats")
 		return
 	}
 
@@ -481,9 +479,7 @@ func displayServerStats(cid, sid string) {
 
 	totalAirhorns, err := utilSumRedisKeys(keys.([]string))
 	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Error("Error reading stats")
+		log.WithError(err).Error("Error reading stats")
 		return
 	}
 
@@ -580,7 +576,7 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if channel == nil {
 		log.WithFields(log.Fields{
 			"channel": m.ChannelID,
-			"message": m.ID,
+			"message": msg,
 		}).Warning("Failed to grab channel")
 		return
 	}
@@ -590,14 +586,15 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		log.WithFields(log.Fields{
 			"guild":   channel.GuildID,
 			"channel": channel,
-			"message": m.ID,
+			"message": msg,
+			"from":    m.Author.ID,
 		}).Warning("Failed to grab guild")
 		return
 	}
 
 	log.WithFields(log.Fields{
-		"message": m.ID,
-		"owner":   m.Author.ID,
+		"message": msg,
+		"from":    m.Author.ID,
 	}).Info("Received message")
 
 	// If this is a mention
@@ -627,7 +624,8 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	guildSounds, err := service.GetSoundsByCommand(command, channel.GuildID)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"error": err,
+			"error":   err,
+			"guildId": channel.GuildID,
 		}).Warn("Couldn't get sounds from db")
 	}
 	sounds = append(sounds, guildSounds...)
@@ -731,9 +729,7 @@ func main() {
 		conn := redisPool.Get()
 		_, err = conn.Do("PING")
 		if err != nil {
-			log.WithFields(log.Fields{
-				"error": err,
-			}).Fatal("Can't establish a connection to the redis server")
+			log.WithError(err).Fatal("Can't establish a connection to the redis server")
 			return
 		}
 
@@ -747,9 +743,7 @@ func main() {
 	log.Info("Starting discord session...")
 	discord, err = discordgo.New(fmt.Sprintf("Bot %v", cfg.DiscordToken))
 	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Fatal("Failed to create discord session")
+		log.WithError(err).Fatal("Failed to create discord session")
 		return
 	}
 
@@ -758,9 +752,7 @@ func main() {
 
 	err = discord.Open()
 	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Fatal("Failed to create discord websocket connection")
+		log.WithError(err).Fatal("Failed to create discord websocket connection")
 		return
 	}
 
