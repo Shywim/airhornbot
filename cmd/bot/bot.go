@@ -232,7 +232,7 @@ func enqueuePlay(user *discordgo.User, guild *discordgo.Guild, sounds []*service
 		t, ok := dcTimers.Load(guild.ID)
 		if ok && t != nil {
 			// if the bot is waiting to disconnect, relaunch the queue immediately
-			timer := t.(time.Timer)
+			timer := t.(*time.Timer)
 			cancelDcTimer(timer, guild.ID)
 			playSound(p, nil, cid)
 		} else if len(queue) < maxQueueSize {
@@ -384,7 +384,7 @@ func cancelDcTimer(timer time.Timer, gID string) {
 func endQueue(vc *discordgo.VoiceConnection, gID string) {
 	t, ok := dcTimers.Load(gID)
 	if ok && t != nil {
-		timer := t.(time.Timer)
+		timer := t.(*time.Timer)
 		cancelDcTimer(timer, gID)
 		timer.Reset(5 * time.Minute)
 		return
