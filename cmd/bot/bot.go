@@ -233,10 +233,12 @@ func enqueuePlay(user *discordgo.User, guild *discordgo.Guild, sounds []*service
 		if ok && t != nil {
 			// if the bot is waiting to disconnect, relaunch the queue immediately
 			timer := t.(*time.Timer)
-			cancelDcTimer(timer, guild.ID)
+			if !timer.Stop() {
+				queues.Store(guild.ID, make(chan *play, maxQueueSize))
+			}
 			playSound(p, nil, cid)
 		} else if len(queue) < maxQueueSize {
-			// else but the play in queue
+			// else put the play in queue
 			queue <- p
 		}
 	} else {
@@ -369,29 +371,23 @@ func playSound(p *play, vc *discordgo.VoiceConnection, cid string) {
 }
 
 func disconnect(timer *time.Timer, vc *discordgo.VoiceConnection, gID string) {
-	<-timer.C
 	queues.Delete(gID)
 	voiceDisconnect(vc)
 	dcTimers.Delete(timer)
-}
-
-func cancelDcTimer(timer *time.Timer, gID string) {
-	if !timer.Stop() {
-		<-timer.C
-	}
 }
 
 func endQueue(vc *discordgo.VoiceConnection, gID string) {
 	t, ok := dcTimers.Load(gID)
 	if ok && t != nil {
 		timer := t.(*time.Timer)
-		cancelDcTimer(timer, gID)
-		timer.Reset(5 * time.Minute)
+		if timer.Stop() {
+			timer.Reset(5 * time.Minute)
+		}
 		return
 	}
 
-	timer := time.NewTimer(5 * time.Minute)
-	go disconnect(timer, vc, gID)
+	var timer *time.Timer
+	timer = time.AfterFunc(5*time.Minute, func() { disconnect(timer, vc, gID) })
 	dcTimers.Store(gID, timer)
 }
 
