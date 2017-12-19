@@ -375,7 +375,7 @@ func disconnect(timer *time.Timer, vc *discordgo.VoiceConnection, gID string) {
 	dcTimers.Delete(timer)
 }
 
-func cancelDcTimer(timer time.Timer, gID string) {
+func cancelDcTimer(timer *time.Timer, gID string) {
 	if !timer.Stop() {
 		<-timer.C
 	}
