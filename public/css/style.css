@@ -46,6 +46,20 @@ body {
     flex: 2;
 }
 
+.field {
+	margin-bottom: 1rem;
+}
+
+.field > label {
+	display: block;
+	font-weight: bold;
+}
+
+.field > .hint {
+	font-size: 0.8rem;
+	margin: 0;
+}
+
 /*.guild-list {
     width: 100%;
 }
