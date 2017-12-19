@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"gitlab.com/Shywim/airhornbot/service"
 	log "github.com/Sirupsen/logrus"
 	"github.com/oxtoacart/bpool"
+	"gitlab.com/Shywim/airhornbot/service"
 )
 
 var (
@@ -29,7 +29,7 @@ type TemplateContext struct {
 
 func getContext(r *http.Request) TemplateContext {
 	return TemplateContext{
-		SiteURL:      "http://" + r.Host,
+		SiteURL:      "//" + r.Host,
 		StatsCounter: *service.GetStats(),
 	}
 }
