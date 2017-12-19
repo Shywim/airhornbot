@@ -361,8 +361,6 @@ func playSound(p *play, vc *discordgo.VoiceConnection, cid string) {
 			playSound(p, vc, cid)
 			return
 		}
-
-		close(queue)
 	}
 
 	// If the queue is empty, delete it
