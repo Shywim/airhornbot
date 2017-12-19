@@ -48,7 +48,8 @@ func (s *Sound) Save() error {
 
 	if !isNew {
 		// delete every command associated to the sound
-		_, err = tx.Exec("DELETE FROM command WHERE soundId = ? AND guildId = ?", s.ID, s.GuildID)
+		q := tx.Rebind("DELETE FROM command WHERE soundId = ? AND guildId = ?")
+		_, err = tx.Exec(q, s.ID, s.GuildID)
 		if err != nil {
 			tx.Rollback()
 			return err
