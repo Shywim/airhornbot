@@ -36,7 +36,7 @@ func (s *Sound) Save() error {
 
 	if isNew {
 		q := tx.Rebind(`INSERT INTO sound (guildID, name, gif, weight, filepath) VALUES (?, ?, ?, ?, ?)`)
-		s.ID, err = insertGetID(tx, q, s.GuildID, s.Name, s.Gif, s.Weight, S.FilePath)
+		s.ID, err = insertGetID(tx, q, s.GuildID, s.Name, s.Gif, s.Weight, s.FilePath)
 	} else {
 		q := tx.Rebind("UPDATE sound SET name = ?, gif = ?, weight = ? WHERE id = ? AND guildId = ?")
 		_, err = tx.Exec(q, s.Name, s.Gif, s.Weight, s.ID, s.GuildID)
