@@ -2,7 +2,9 @@
 <body>
 <div class="content">
 <div class="header">
-  <h1 class="title">Editing sound</h1>
+  <h1 class="title">
+	{{ if eq .Data.ID "new" }}New{{ else }}Editing{{ end }} sound
+  </h1>
   <a class="back" href="{{ .Context.SiteURL }}/manage/{{ .Data.GuildID }}">Back</a>
 </div>
 
@@ -17,7 +19,7 @@
     <input type="text" name="commands" placeholder="airhorn" value="{{ .Data.CommandsString }}" required>
     <p class="hint">Command to type preceded by "!" (you don't need to type the "!")</p>
   </div>
-  {{ if eq .Data.ID "" }}
+  {{ if eq .Data.ID "new" }}
   <div class="field">
     <label>Sound file</label>
     <input type="file" name="file" accept=".mp3, .ogg, .dca">
