@@ -37,9 +37,10 @@
           <img src="{{ .SiteURL }}/assets/airhorn-counter.svg">
           <div class="count-text">
             <div class="count" id="count">
-              <noscript>plenty of noise</noscript>
               {{ if .NoRedis }}
                 plenty of noise
+			  {{ else }}
+				{{ .StatsCounter.Total }}
               {{ end }}
             </div>
             <div class="and-counting">and counting</div>
@@ -60,8 +61,8 @@
       <a href="https://discordapp.com">Discord</a>
       <span>. Tinkered with <span class="love">love</span> by Shywim.</span>
       <br>
-      <span>Contribute yourself on</span>
-      <a href="https://github.com/shywim/airhornbot">Github ➔</a>
+      <span>Contribute on</span>
+      <a href="https://gitlab.com/shywim/airhornbot">Gitlab ➔</a>
       </span>
     </div>
 
