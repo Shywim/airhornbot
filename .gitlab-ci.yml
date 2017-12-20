@@ -34,16 +34,30 @@ docker-bot:
   script:
     - docker build --pull -t "$BOT_IMAGE_NAME":latest -f Dockerfile.bot .
     - docker push "$BOT_IMAGE_NAME":latest
-  except:
-    - tags
+  only:
+    - master
 
 docker-web:
   stage: build
   script:
     - docker build --pull -t "$WEB_IMAGE_NAME":latest -f Dockerfile.web .
     - docker push "$WEB_IMAGE_NAME":latest
-  except:
-    - tags
   only:
-    - pushes
+    - master
+    
+docker-bot:
+  stage: build
+  script:
+    - docker build --pull -t "$BOT_IMAGE_NAME":develop -f Dockerfile.bot .
+    - docker push "$BOT_IMAGE_NAME":develop
+  only:
+    - develop
+
+docker-web:
+  stage: build
+  script:
+    - docker build --pull -t "$WEB_IMAGE_NAME":develop -f Dockerfile.web .
+    - docker push "$WEB_IMAGE_NAME":develop
+  only:
+    - develop
 
