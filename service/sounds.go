@@ -55,9 +55,9 @@ func (s *Sound) Save() error {
 			return err
 		}
 	}
-	for command := range s.Commands {
+	for _, command := range s.Commands {
 		q := tx.Rebind("INSERT INTO command (soundId, guildId, command) VALUES (?, ?, ?)")
-		_, err = tx.Exec(q, s.ID, s.GuildID, command)
+		_, err = tx.Exec(q, s.ID, s.GuildID, strings.TrimSpace(command))
 		if err != nil {
 			tx.Rollback()
 			return err
