@@ -166,6 +166,7 @@ func EditSoundRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 
 	if strings.Compare(soundID, "new") == 0 {
 		sound = &service.Sound{
+			ID:      "new",
 			GuildID: guildID,
 		}
 	} else {
