@@ -102,6 +102,7 @@ func ManageRoute(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		AskLoginRoute(w, r, nil)
 		return
 	}
+	defer session.Close()
 
 	userGuilds, err := service.GetGuildsWithSounds(session)
 	if err != nil {
@@ -127,6 +128,12 @@ func ManageGuildRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 	}
 
 	session := GetDiscordSession(token)
+	if session == nil {
+		AskLoginRoute(w, r, nil)
+		return
+	}
+	defer session.Close()
+
 	guild, err := service.GetGuildWithSounds(session, ps.ByName("guildID"))
 	if err != nil {
 		// TODO: error
@@ -157,6 +164,12 @@ func EditSoundRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 	}
 
 	session := GetDiscordSession(token)
+	if session == nil {
+		AskLoginRoute(w, r, nil)
+		return
+	}
+	defer session.Close()
+
 	isAdmin, err := IsDiscordAdmin(session, guildID)
 	if err != nil || !isAdmin {
 		// TODO: error
@@ -194,6 +207,11 @@ func EditSoundPostRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	guildID := ps.ByName("guildID")
 	token := getDiscordToken(r)
 	session := GetDiscordSession(token)
+	if session == nil {
+		AskLoginRoute(w, r, nil)
+		return
+	}
+	defer session.Close()
 
 	hasPerm, err := IsDiscordAdmin(session, guildID)
 	if err != nil {

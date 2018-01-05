@@ -100,7 +100,14 @@ func getDiscordToken(r *http.Request) string {
 func GetDiscordSession(token string) *discordgo.Session {
 	discord, err := discordgo.New(fmt.Sprintf("Bearer %v", token))
 	if err != nil {
-		log.WithError(err).Warning("Error connecting to discord api or has expired")
+		log.WithError(err).Warning("Error connecting to discord api")
+		return nil
+	}
+
+	err = discord.Open()
+	if err != nil {
+		log.WithError(err).Warning("Invalid or expired token")
+		discord.Close()
 		return nil
 	}
 
