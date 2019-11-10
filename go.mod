@@ -1,0 +1,44 @@
+module github.com/shywim/airhornbot
+
+go 1.13
+
+require (
+	github.com/Sirupsen/logrus v1.0.4
+	github.com/antage/eventsource v0.0.0-20160402204619-a89c7cecb559
+	github.com/bwmarrin/discordgo v0.17.0
+	github.com/dustin/go-humanize v0.0.0-20171012181109-77ed807830b4
+	github.com/fsnotify/fsnotify v1.4.2
+	github.com/garyburd/redigo v1.2.0
+	github.com/go-sql-driver/mysql v1.3.0
+	github.com/golang/protobuf v0.0.0-20171021043952-1643683e1b54
+	github.com/gorilla/context v0.0.0-20160226214623-1ea25387ff6f
+	github.com/gorilla/handlers v1.2.1
+	github.com/gorilla/securecookie v0.0.0-20160422134519-667fe4e3466a
+	github.com/gorilla/sessions v0.0.0-20160922145804-ca9ada445741
+	github.com/gorilla/websocket v1.2.0
+	github.com/hashicorp/hcl v0.0.0-20171017181929-23c074d0eceb
+	github.com/jmoiron/sqlx v0.0.0-20171211234905-de8647470aaf
+	github.com/jonas747/dca v0.0.0-20171004024810-01f9985f4a26
+	github.com/jonas747/ogg v0.0.0-20161220051205-b4f6f4cf3757
+	github.com/julienschmidt/httprouter v1.1.0
+	github.com/lib/pq v0.0.0-20171022192043-b609790bd85e
+	github.com/magefile/mage v1.9.0
+	github.com/magiconair/properties v1.7.3
+	github.com/mitchellh/mapstructure v0.0.0-20171017171808-06020f85339e
+	github.com/oxtoacart/bpool v0.0.0-20150712133111-4e1c5567d7c2
+	github.com/pelletier/go-toml v1.0.1
+	github.com/satori/go.uuid v1.1.0
+	github.com/spf13/afero v0.0.0-20171021110813-5660eeed305f
+	github.com/spf13/cast v1.1.0
+	github.com/spf13/jwalterweatherman v0.0.0-20170901151539-12bd96e66386
+	github.com/spf13/pflag v1.0.0
+	github.com/spf13/viper v1.0.0
+	gitlab.com/Shywim/airhornbot v0.0.0-20171220100213-39504b8fb2af
+	golang.org/x/crypto v0.0.0-20171023145632-2509b142fb2b
+	golang.org/x/net v0.0.0-20171027103834-c73622c77280
+	golang.org/x/oauth2 v0.0.0-20170928010508-bb50c06baba3
+	golang.org/x/sys v0.0.0-20171028101351-661970f62f58
+	golang.org/x/text v0.1.1-0.20171024115504-6eab0e8f74e8
+	google.golang.org/appengine v1.0.0
+	gopkg.in/yaml.v2 v2.0.0-20170812160011-eb3733d160e7
+)
