@@ -22,7 +22,8 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/garyburd/redigo/redis"
 	"github.com/jonas747/dca"
-	"gitlab.com/Shywim/airhornbot/service"
+	"github.com/otiai10/copy"
+	"github.com/shywim/airhornbot/service"
 )
 
 var (
@@ -178,6 +179,7 @@ func loadSound(s *service.Sound) (buffer [][]byte, err error) {
 }
 
 func doPlay(soundData [][]byte, vc *discordgo.VoiceConnection) {
+	log.WithFields(log.Fields{"channel": vc.ChannelID, "guild": vc.GuildID}).Info("Playing sound")
 	_ = vc.Speaking(true)
 	defer func() {
 		err := vc.Speaking(false)
@@ -227,17 +229,28 @@ func enqueuePlay(user *discordgo.User, guild *discordgo.Guild, sounds []*service
 	tmp, ok := queues.Load(guild.ID)
 
 	if ok && tmp != nil {
+		log.WithFields(log.Fields{
+			"guild": guild.ID,
+		}).Info("Found an existing queue")
 		queue, _ := tmp.(chan *play)
 
 		t, ok := dcTimers.Load(guild.ID)
 		if ok && t != nil {
 			// if the bot is waiting to disconnect, relaunch the queue immediately
+			log.WithFields(log.Fields{
+				"guild": guild.ID,
+			}).Info("Stoping timer disconnect timer...")
+
 			timer := t.(*time.Timer)
 			if !timer.Stop() {
-				queues.Store(guild.ID, make(chan *play, maxQueueSize))
+				queue <- p
+			} else {
+				playSound(p, nil, cid)
 			}
-			playSound(p, nil, cid)
 		} else if len(queue) < maxQueueSize {
+			log.WithFields(log.Fields{
+				"guild": guild.ID,
+			}).Info("Play put at the end of the queue...")
 			// else put the play in queue
 			queue <- p
 		}
@@ -293,7 +306,7 @@ func trackSoundStats(p *play) {
 }
 
 // Play a sound
-func playSound(p *play, vc *discordgo.VoiceConnection, cid string) {
+func playSound(p *play, vc *discordgo.VoiceConnection, cid string) *discordgo.VoiceConnection {
 	log.WithFields(log.Fields{
 		"p": p,
 	}).Info("Playing sound")
@@ -302,7 +315,7 @@ func playSound(p *play, vc *discordgo.VoiceConnection, cid string) {
 	soundData, err := loadSound(p.Sound)
 	if err != nil {
 		log.WithError(err).Error("Failed to read sound file")
-		return
+		return vc
 	}
 
 	if vc == nil {
@@ -316,7 +329,7 @@ func playSound(p *play, vc *discordgo.VoiceConnection, cid string) {
 			if err != nil {
 				log.WithError(err).Error("Failed to disconnect from voice channel")
 			}
-			return
+			return vc
 		}
 	}
 
@@ -329,7 +342,7 @@ func playSound(p *play, vc *discordgo.VoiceConnection, cid string) {
 			if err != nil {
 				log.WithError(err).Error("Failed to disconnect from voice channel")
 			}
-			return
+			return vc
 		}
 		time.Sleep(time.Millisecond * 125)
 	}
@@ -351,6 +364,11 @@ func playSound(p *play, vc *discordgo.VoiceConnection, cid string) {
 	// Play the sound
 	doPlay(soundData, vc)
 
+	goThroughQueue(p, vc, cid)
+	return vc
+}
+
+func goThroughQueue(p *play, vc *discordgo.VoiceConnection, cid string) {
 	// If there is another song in the queue, recurse and p that
 	tmp, exists := queues.Load(p.GuildID)
 
@@ -358,14 +376,13 @@ func playSound(p *play, vc *discordgo.VoiceConnection, cid string) {
 		queue := tmp.(chan *play)
 		if len(queue) > 0 {
 			p := <-queue
-			playSound(p, vc, cid)
+			vc = playSound(p, vc, cid)
 			return
 		}
 	}
 
 	// If the queue is empty, delete it
 	endQueue(vc, p.GuildID)
-	return
 }
 
 func disconnect(timer *time.Timer, vc *discordgo.VoiceConnection, gID string) {
@@ -375,12 +392,14 @@ func disconnect(timer *time.Timer, vc *discordgo.VoiceConnection, gID string) {
 }
 
 func endQueue(vc *discordgo.VoiceConnection, gID string) {
+	log.WithFields(log.Fields{
+		"guild": vc.GuildID,
+	}).Info("Starting disconnect timer...")
+
 	t, ok := dcTimers.Load(gID)
 	if ok && t != nil {
 		timer := t.(*time.Timer)
-		if timer.Stop() {
-			timer.Reset(5 * time.Minute)
-		}
+		timer.Reset(5 * time.Minute)
 		return
 	}
 
@@ -729,12 +748,18 @@ func loadPlugins(pluginsPath string) {
 	}
 }
 
+func copyDefaultSounds() {
+	copy.Copy("./audio", cfg.DataPath+string(os.PathSeparator)+"default_sounds")
+}
+
 func main() {
 	var err error
 	cfg, err = service.LoadConfig()
 	if err != nil {
 		log.WithError(err).Fatal("Couldn't load configuration")
 	}
+
+	copyDefaultSounds()
 
 	loadPlugins(cfg.PluginPath)
 

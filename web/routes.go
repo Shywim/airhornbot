@@ -11,7 +11,7 @@ import (
 	"github.com/jonas747/dca"
 	"github.com/julienschmidt/httprouter"
 	uuid "github.com/satori/go.uuid"
-	"gitlab.com/Shywim/airhornbot/service"
+	"github.com/shywim/airhornbot/service"
 	"golang.org/x/oauth2"
 )
 

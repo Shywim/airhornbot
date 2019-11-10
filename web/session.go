@@ -12,7 +12,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/bwmarrin/discordgo"
 	"github.com/gorilla/sessions"
-	"gitlab.com/Shywim/airhornbot/service"
+	"github.com/shywim/airhornbot/service"
 	"golang.org/x/oauth2"
 )
 
@@ -55,7 +55,7 @@ func InitSessions(cfg service.Cfg) {
 		ClientSecret: cfg.DiscordClientSecret,
 		Scopes:       []string{"bot", "identify", "guilds"},
 		Endpoint:     endpoint,
-		RedirectURL:  "http://airhorn.shywim.fr/callback",
+		RedirectURL:  cfg.DiscordRedirectURI,
 	}
 
 	manageOAuthConf = &oauth2.Config{
@@ -63,7 +63,7 @@ func InitSessions(cfg service.Cfg) {
 		ClientSecret: cfg.DiscordClientSecret,
 		Scopes:       []string{"identify", "guilds"},
 		Endpoint:     endpoint,
-		RedirectURL:  "http://airhorn.shywim.fr/callback",
+		RedirectURL:  cfg.DiscordRedirectURI,
 	}
 }
 

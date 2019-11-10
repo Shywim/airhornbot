@@ -7,7 +7,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/oxtoacart/bpool"
-	"gitlab.com/Shywim/airhornbot/service"
+	"github.com/shywim/airhornbot/service"
 )
 
 var (

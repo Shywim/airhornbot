@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.com/Shywim/airhornbot/service"
-	"gitlab.com/Shywim/airhornbot/web"
+	"github.com/shywim/airhornbot/service"
+	"github.com/shywim/airhornbot/web"
 	log "github.com/Sirupsen/logrus"
 	"github.com/antage/eventsource"
 	"github.com/bwmarrin/discordgo"

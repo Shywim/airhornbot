@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	basePackage = "gitlab.com/Shywim/airhornbot"
+	basePackage = "github.com/shywim/airhornbot"
 	botPackage  = basePackage + "/cmd/bot"
 	botBinary   = "airhornbot"
 	webPackage  = basePackage + "/cmd/web"
