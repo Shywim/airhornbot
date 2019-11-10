@@ -1,20 +1,20 @@
 version: "3"
 services:
   bot:
-    image: registry.gitlab.com/Shywim/airhornbot/bot:latest
+    image: shywim/airhornbot-bot:latest
     volumes:
       - data:/data
-      - /etc/airhornbot:/etc/airhornbot
-      - /etc/airhornbot/plugins:/etc/airhornbot/plugins
+      - ./config:/etc/airhornbot
+      - .t/plugins:/etc/airhornbot/plugins
     networks:
       - back
     links:
       - db
   web:
-    image: registry.gitlab.com/Shywim/airhornbot/web:latest
+    image: shywim/airhornbot-web:latest
     volumes:
       - data:/data
-      - /etc/airhornbot:/etc/airhornbot
+      - ./config:/etc/airhornbot
     networks:
       - front
       - back
