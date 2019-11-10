@@ -15,5 +15,5 @@ token = ""
 owner_id = ""
 
 [data]
-data_path = "data"
-plugins_path = "plugins"
+data_path = "/data"
+plugins_path = "/etc/airhornbot/plugins"

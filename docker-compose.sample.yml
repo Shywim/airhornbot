@@ -5,7 +5,7 @@ services:
     volumes:
       - data:/data
       - ./config:/etc/airhornbot
-      - .t/plugins:/etc/airhornbot/plugins
+      - ./plugins:/etc/airhornbot/plugins
     networks:
       - back
     links:
