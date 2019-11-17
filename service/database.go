@@ -6,9 +6,9 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/garyburd/redigo/redis"
-	// mysql driver, used via database/sql
-	_ "github.com/go-sql-driver/mysql"
+
 	"github.com/jmoiron/sqlx"
+
 	// postgresql driver, used via database/sql
 	_ "github.com/lib/pq"
 )
@@ -16,17 +16,14 @@ import (
 var db *sqlx.DB
 
 func initDb() {
-	connPrefix := ""
+	connPrefix := "postgres://"
 	connSuffix := ""
-	if config.DBDriver == "postgres" {
-		connPrefix = "postgres://"
 
-		ssl := "sslmode="
-		if config.DBSSL {
-			connSuffix = ssl + "verify-full"
-		} else {
-			connSuffix = ssl + "disable"
-		}
+	ssl := "sslmode="
+	if config.DBSSL {
+		connSuffix = ssl + "verify-full"
+	} else {
+		connSuffix = ssl + "disable"
 	}
 
 	connString := fmt.Sprintf("%s%s:%s@%s/%s?%s", connPrefix,
@@ -45,29 +42,43 @@ func initDb() {
 
 	_, err = db.Exec("CREATE TABLE IF NOT EXISTS sound (" +
 		"id " + primaryKeyType + "," +
-		"guildId VARCHAR(255)," +
-		"name VARCHAR(255)," +
-		"gif VARCHAR(255)," +
-		"weight INTEGER," +
-		"filepath VARCHAR(255)" +
+		"guild_id TEXT NOT NULL," +
+		"name TEXT NOT NULL," +
+		"description TEXT NOT NULL DEFAULT ''," +
+		"gif TEXT NOT NULL DEFAULT ''," +
+		"filepath TEXT NOT NULL" +
 		")")
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
-		}).Warn("Error creating tables")
+		}).Warn("Error creating sound table")
+	}
+
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS commands_sounds (" +
+		"command_id TEXT NOT NULL," +
+		"sound_id TEXT NOT NULL," +
+		"weight INTEGER NOT NULL DEFAULT 1," +
+		"FOREIGN KEY(command_id) REFERENCES command(id) ON DELETE CASCADE" +
+		"FOREIGN KEY(sound_id) REFERENCES sound(id) ON DELETE CASCADE" +
+		"PRIMARY KEY(command_id, sound_id)" +
+		")")
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Warn("Error creating commands_sounds tables")
 	}
 
 	_, err = db.Exec("CREATE TABLE IF NOT EXISTS command (" +
 		"id " + primaryKeyType + "," +
-		"command VARCHAR(255)," +
-		"guildId VARCHAR(255)," +
-		"soundId INTEGER," +
-		"FOREIGN KEY(soundId) REFERENCES sound(id) ON DELETE CASCADE" +
+		"command TEXT NOT NULL," +
+		"guild_id TEXT NOT NULL," +
+		"sound_id INTEGER NOT NULL," +
+		"FOREIGN KEY(sound_id) REFERENCES sound(id) ON DELETE CASCADE" +
 		")")
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
-		}).Warn("Error creating tables")
+		}).Warn("Error creating command tables")
 	}
 }
 
