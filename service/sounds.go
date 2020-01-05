@@ -13,17 +13,19 @@ type Sound struct {
 	GuildID string `json:"guildId"`
 	Name    string `json:"name"`
 
-	// Link to a gif url
-	Gif string `json:"gif"`
+	FilePath string `json:"filepath"`
+}
 
-	// Weight adjust how likely it is this song will play, higher = more likely
-	Weight int `json:"weight"`
+// Command represents a
+type Command struct {
+	ID      string `json:"id"`
+	GuildID string `json:"guildId"`
+	SoundID string `json:"soundId"`
 
 	// Command to type in channel
-	Commands       []string `json:"commands"`
-	CommandsString string
-
-	FilePath string `json:"filepath"`
+	Command string `json:"command"`
+	// Weight adjust how likely it is this song that will play, higher = more likely
+	Weight int `json:"weight"`
 }
 
 // Save saves a sound to the db

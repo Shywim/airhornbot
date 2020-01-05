@@ -54,23 +54,10 @@ func initDb() {
 		}).Warn("Error creating sound table")
 	}
 
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS commands_sounds (" +
-		"command_id TEXT NOT NULL," +
-		"sound_id TEXT NOT NULL," +
-		"weight INTEGER NOT NULL DEFAULT 1," +
-		"FOREIGN KEY(command_id) REFERENCES command(id) ON DELETE CASCADE" +
-		"FOREIGN KEY(sound_id) REFERENCES sound(id) ON DELETE CASCADE" +
-		"PRIMARY KEY(command_id, sound_id)" +
-		")")
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Warn("Error creating commands_sounds tables")
-	}
-
 	_, err = db.Exec("CREATE TABLE IF NOT EXISTS command (" +
 		"id " + primaryKeyType + "," +
 		"command TEXT NOT NULL," +
+		"weight INTEGER NOT NULL DEFAULT 1," +
 		"guild_id TEXT NOT NULL," +
 		"sound_id INTEGER NOT NULL," +
 		"FOREIGN KEY(sound_id) REFERENCES sound(id) ON DELETE CASCADE" +
