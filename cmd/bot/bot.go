@@ -71,27 +71,24 @@ type play struct {
 	Forced bool
 }
 
-// Create a Sound struct
-func createSound(Name string, Weight int, Gif string) *service.Sound {
-	return &service.Sound{
-		Name:   Name,
-		Gif:    Gif,
-		Weight: Weight,
-	}
-}
-
-func random(s []*service.Sound) *service.Sound {
+func random(s []*service.Sound, command string) *service.Sound {
 	var (
 		i     int
 		total int
 	)
 
 	for _, sound := range s {
-		total += sound.Weight
+		c := sound.FindCommand(command)
+		if c != nil {
+			total += c.Weight
+		}
 	}
 	number := randomRange(0, total)
 	for _, sound := range s {
-		i += sound.Weight
+		c := sound.FindCommand(command)
+		if c != nil {
+			i += c.Weight
+		}
 
 		if number < i {
 			return sound
@@ -194,7 +191,7 @@ func doPlay(soundData [][]byte, vc *discordgo.VoiceConnection) {
 }
 
 // Prepares a play
-func createPlay(user *discordgo.User, guild *discordgo.Guild, coll []*service.Sound) *play {
+func createPlay(user *discordgo.User, guild *discordgo.Guild, coll []*service.Sound, command string) *play {
 	// Grab the users voice channel
 	channel := getCurrentVoiceChannel(user, guild)
 	if channel == nil {
@@ -213,14 +210,14 @@ func createPlay(user *discordgo.User, guild *discordgo.Guild, coll []*service.So
 	}
 
 	// If we didn't get passed a manual sound, generate a random one
-	play.Sound = random(coll)
+	play.Sound = random(coll, command)
 
 	return play
 }
 
 // Prepares and enqueues a play into the ratelimit/buffer guild queue
-func enqueuePlay(user *discordgo.User, guild *discordgo.Guild, sounds []*service.Sound, cid string) {
-	p := createPlay(user, guild, sounds)
+func enqueuePlay(user *discordgo.User, guild *discordgo.Guild, sounds []*service.Sound, cid string, command string) {
+	p := createPlay(user, guild, sounds, command)
 	if p == nil {
 		return
 	}
@@ -352,14 +349,6 @@ func playSound(p *play, vc *discordgo.VoiceConnection, cid string) *discordgo.Vo
 
 	// Sleep for a specified amount of time before ping the sound
 	time.Sleep(time.Millisecond * 32)
-
-	// Send gif if present
-	if p.Sound.Gif != "" {
-		_, err = discord.ChannelMessageSend(cid, p.Sound.Gif)
-		if err != nil {
-			log.WithError(err).Warning("Failed to send gif to text channel")
-		}
-	}
 
 	// Play the sound
 	doPlay(soundData, vc)
@@ -561,7 +550,7 @@ func airhornBomb(cid string, guild *discordgo.Guild, user *discordgo.User, cs st
 
 	airhornSounds := service.FilterByCommand("airhorn", service.DefaultSounds)
 
-	play := createPlay(user, guild, airhornSounds)
+	play := createPlay(user, guild, airhornSounds, "airhorn")
 	vc, err := voiceConnect(play.GuildID, play.ChannelID)
 	if err != nil {
 		return
@@ -604,7 +593,10 @@ func findPluginForSound(name string) (sounds []*service.Sound) {
 			sound := &service.Sound{
 				FilePath: "@plugin/" + p.name,
 				Name:     name,
-				Weight:   1,
+				Commands: []service.Command{{
+					Command: name,
+					Weight:  1,
+				}},
 			}
 			sounds = append(sounds, sound)
 		}
@@ -684,7 +676,7 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// if we found at least one sound, play it or them
 	if len(sounds) > 0 {
-		go enqueuePlay(m.Author, guild, sounds, m.ChannelID)
+		go enqueuePlay(m.Author, guild, sounds, m.ChannelID, command)
 	} else {
 		log.WithField("sound", command).Info("No sound found for this command")
 	}

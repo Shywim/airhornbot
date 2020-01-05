@@ -11,6 +11,8 @@ import (
 
 	// postgresql driver, used via database/sql
 	_ "github.com/lib/pq"
+
+	migrate "github.com/rubenv/sql-migrate"
 )
 
 var db *sqlx.DB
@@ -35,38 +37,16 @@ func initDb() {
 		return
 	}
 
-	primaryKeyType := "INTEGER PRIMARY KEY"
-	if config.DBDriver == "postgres" {
-		primaryKeyType = "SERIAL PRIMARY KEY"
+	migrations := &migrate.FileMigrationSource{
+		Dir: "db/migrations",
 	}
-
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS sound (" +
-		"id " + primaryKeyType + "," +
-		"guild_id TEXT NOT NULL," +
-		"name TEXT NOT NULL," +
-		"description TEXT NOT NULL DEFAULT ''," +
-		"gif TEXT NOT NULL DEFAULT ''," +
-		"filepath TEXT NOT NULL" +
-		")")
+	n, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Warn("Error creating sound table")
+		log.WithError(err).Fatal("Failed to execute database migrations")
 	}
-
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS command (" +
-		"id " + primaryKeyType + "," +
-		"command TEXT NOT NULL," +
-		"weight INTEGER NOT NULL DEFAULT 1," +
-		"guild_id TEXT NOT NULL," +
-		"sound_id INTEGER NOT NULL," +
-		"FOREIGN KEY(sound_id) REFERENCES sound(id) ON DELETE CASCADE" +
-		")")
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Warn("Error creating command tables")
-	}
+	log.WithFields(log.Fields{
+		"migrations": n,
+	}).Info("Successfully applied database migrations")
 }
 
 func getDB() *sqlx.DB {

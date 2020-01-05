@@ -53,7 +53,7 @@ func LoginRoute(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		guildIDParam := oauth2.SetAuthURLParam("guild_id", guildID[0])
 		opts = append(opts, guildIDParam)
 	}
-	// Return a redirect to the ouath provider
+	// Return a redirect to the oauth provider
 	url := botOAuthConf.AuthCodeURL(session.Values["state"].(string), opts...)
 	http.Redirect(w, r, url+fmt.Sprintf("&permissions=%v", perms), http.StatusTemporaryRedirect)
 }
@@ -77,7 +77,7 @@ func CallbackRoute(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	}
 
 	// And redirect the user back to the dashboard
-	http.Redirect(w, r, "/?key_to_success=1", http.StatusTemporaryRedirect)
+	http.Redirect(w, r, "/manage", http.StatusTemporaryRedirect)
 }
 
 // AskLoginRoute serves login.gohtml
@@ -234,7 +234,6 @@ func EditSoundPostRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}*/
-	weight := 1
 
 	commands := r.MultipartForm.Value["commands"][0]
 	if commands == "" {
@@ -299,10 +298,8 @@ func EditSoundPostRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 
 		sound := service.Sound{
 			Name:     r.MultipartForm.Value["name"][0],
-			Weight:   weight,
 			FilePath: soundID,
 			GuildID:  guildID,
-			Commands: strings.Split(commands, ","),
 		}
 
 		err = sound.Save()
@@ -314,10 +311,8 @@ func EditSoundPostRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 		sound := service.Sound{
 			ID:       soundID,
 			Name:     r.MultipartForm.Value["name"][0],
-			Weight:   weight,
 			FilePath: soundID,
 			GuildID:  guildID,
-			Commands: strings.Split(commands, ","),
 		}
 
 		err = sound.Save()

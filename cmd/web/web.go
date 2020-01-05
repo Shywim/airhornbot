@@ -8,14 +8,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/shywim/airhornbot/service"
-	"github.com/shywim/airhornbot/web"
 	log "github.com/Sirupsen/logrus"
 	"github.com/antage/eventsource"
 	"github.com/bwmarrin/discordgo"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/sessions"
 	"github.com/julienschmidt/httprouter"
+	"github.com/shywim/airhornbot/service"
+	"github.com/shywim/airhornbot/web"
 )
 
 const (
@@ -27,7 +27,7 @@ var (
 	store *sessions.CookieStore
 
 	// Used for pushing live stat updates to the client
-	es            eventsource.EventSource
+	es eventsource.EventSource
 )
 
 type guildInfo struct {
@@ -42,7 +42,6 @@ func newCountUpdate() *service.CountUpdate {
 	return service.GetStats()
 }
 
-
 func findGuild(guilds []*discordgo.UserGuild, guildID string) *discordgo.UserGuild {
 	for _, g := range guilds {
 		if g.ID == guildID {
@@ -53,32 +52,32 @@ func findGuild(guilds []*discordgo.UserGuild, guildID string) *discordgo.UserGui
 }
 
 func handleDeleteSound(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-/*	guildID := ps.ByName("guildId")
-	soundID := ps.ByName("soundId")
-	session, _ := store.Get(r, "session")
-	token := session.Values["token"]
+	/*	guildID := ps.ByName("guildId")
+		soundID := ps.ByName("soundId")
+		session, _ := store.Get(r, "session")
+		token := session.Values["token"]
 
-	isAdmin, err := checkIsGuildAdmin(guildID, string(token.(string)))
-	if err != nil {
-		if strings.HasPrefix(err.Error(), "HTTP 401") {
+		isAdmin, err := checkIsGuildAdmin(guildID, string(token.(string)))
+		if err != nil {
+			if strings.HasPrefix(err.Error(), "HTTP 401") {
+				http.Error(w, err.Error(), http.StatusUnauthorized)
+				return
+			}
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if isAdmin == false {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if isAdmin == false {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
 
-	err = service.DeleteSound(guildID, soundID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-  
-  */
+		err = service.DeleteSound(guildID, soundID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+	*/
 
 	w.WriteHeader(http.StatusOK)
 }
@@ -97,6 +96,7 @@ func defaultHandler(w http.ResponseWriter, r *http.Request) {
 
 func server() {
 	server := httprouter.New()
+	server.HandleMethodNotAllowed = false
 	server.GET("/", web.HomeRoute)
 	server.GET("/login", web.LoginRoute)
 	server.GET("/callback", web.CallbackRoute)
