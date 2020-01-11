@@ -5,8 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	log "github.com/Sirupsen/logrus"
 )
 
 // Sound represents a sound clip
@@ -110,8 +108,6 @@ func (s *Sound) getCommands() error {
 	if err != nil {
 		return err
 	}
-
-	log.WithField("sound", s).Info("Au secours")
 
 	return nil
 }
