@@ -16,7 +16,7 @@
   </div>
   <div class="field">
     <label>Command</label>
-    <input type="text" name="commands" placeholder="airhorn" value="{{ .Data.CommandsString }}" required>
+    <input type="text" name="commands" placeholder="airhorn" value="{{ if gt (len .Data.Commands) 0}}{{ (index .Data.Commands 0).Command }}{{ end }}" required>
     <p class="hint">Command to type preceded by "!" (you don't need to type the "!")</p>
   </div>
   {{ if eq .Data.ID "new" }}

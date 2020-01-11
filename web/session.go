@@ -88,9 +88,7 @@ func getSession(r *http.Request) *sessions.Session {
 // GetDiscordToken try to get an existing token stored in the session
 func getDiscordToken(r *http.Request) string {
 	session := getSession(r)
-	log.WithFields(log.Fields{
-		"values": session.Values,
-	}).Info("aaaaaaaaaaaaaah")
+
 	token := session.Values["token"]
 	if token == nil || token == "" {
 		return ""
@@ -107,10 +105,9 @@ func GetDiscordSession(token string) *discordgo.Session {
 		return nil
 	}
 
-	err = discord.Open()
+	_, err = discord.User("@me")
 	if err != nil {
 		log.WithError(err).WithFields(log.Fields{token: token}).Warning("Invalid or expired token")
-		discord.Close()
 		return nil
 	}
 

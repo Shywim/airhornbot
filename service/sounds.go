@@ -5,29 +5,31 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 // Sound represents a sound clip
 type Sound struct {
-	ID      string `json:"id"`
-	GuildID string `json:"guildId"`
-	Name    string `json:"name"`
+	ID      string `json:"id" db:"id"`
+	GuildID string `json:"guildId" db:"guild_id"`
+	Name    string `json:"name" db:"name"`
 
-	FilePath string `json:"filepath"`
+	FilePath string `json:"filepath" db:"file_path"`
 
 	Commands []Command `json:"commands"`
 }
 
 // Command represents a
 type Command struct {
-	ID      string `json:"id"`
-	GuildID string `json:"guildId"`
-	SoundID string `json:"soundId"`
+	ID      string `json:"id" db:"id"`
+	GuildID string `json:"guildId" db:"guild_id"`
+	SoundID string `json:"soundId" db:"sound_id"`
 
 	// Command to type in channel
-	Command string `json:"command"`
+	Command string `json:"command" db:"command"`
 	// Weight adjust how likely it is this song that will play, higher = more likely
-	Weight int `json:"weight"`
+	Weight int `json:"weight" db:"weight"`
 }
 
 // Save saves a sound to the db
@@ -39,7 +41,7 @@ func (s *Sound) Save() error {
 	isNew := s.ID == ""
 
 	if isNew {
-		q := tx.Rebind(`INSERT INTO sound (guild_id, name, filepath) VALUES (?, ?, ?)`)
+		q := tx.Rebind(`INSERT INTO sound (guild_id, name, file_path) VALUES (?, ?, ?)`)
 		s.ID, err = insertGetID(tx, q, s.GuildID, s.Name, s.FilePath)
 	} else {
 		q := tx.Rebind("UPDATE sound SET name = ? WHERE id = ? AND guild_id = ?")
@@ -52,7 +54,7 @@ func (s *Sound) Save() error {
 
 	if !isNew {
 		// delete every command associated to the sound
-		q := tx.Rebind("DELETE FROM command WHERE soundId = ? AND guildId = ?")
+		q := tx.Rebind("DELETE FROM command WHERE sound_id = ? AND guild_id = ?")
 		_, err = tx.Exec(q, s.ID, s.GuildID)
 		if err != nil {
 			tx.Rollback()
@@ -96,7 +98,7 @@ func SaveAudio(a io.Reader, n string) error {
 // Delete delete a sound from the DB
 func (s *Sound) Delete() error {
 	// TODO: also delete the sound file?
-	q := db.Rebind("DELETE FROM sound WHERE id = ? AND guildId = ?")
+	q := db.Rebind("DELETE FROM sound WHERE id = ? AND guild_id = ?")
 	_, err := db.Exec(q, s.ID, s.GuildID)
 
 	return err
@@ -104,22 +106,12 @@ func (s *Sound) Delete() error {
 
 // getCommands retrieve a sound's commands from database
 func (s *Sound) getCommands() error {
-	q := db.Rebind("SELECT * FROM command WHERE soundId = ?")
-	rows, err := db.Query(q, s.ID)
+	err := db.Select(&s.Commands, "SELECT * FROM command WHERE sound_id = $1", s.ID)
 	if err != nil {
 		return err
 	}
 
-	for rows.Next() {
-		var commandID int
-		rows.Scan(&commandID)
-
-		row := db.QueryRowx(q, commandID)
-
-		command := Command{}
-		row.StructScan(&command)
-		s.Commands = append(s.Commands, command)
-	}
+	log.WithField("sound", s).Info("Au secours")
 
 	return nil
 }
@@ -347,47 +339,11 @@ var DefaultSounds = []*Sound{
 		FilePath: "./default_sounds/wow_thatscool.dca",
 	},
 
-	// { // quel beau canasson
-	// 	Name:     "test",
-	// 	Weight:   1,
-	// 	Commands: []string{"test1"},
-	// 	FilePath: "./0a35492f-0175-457f-983d-c69ea1a17d8c",
-	// },
-	// { // k-on ohayo
-	// 	Name:     "test",
-	// 	Weight:   1,
-	// 	Commands: []string{"test2"},
-	// 	FilePath: "./0e6fa4a8-7ad1-4931-86fe-d721fd58c4ef",
-	// },
 	// { // chat chelou
 	// 	Name:     "test",
 	// 	Weight:   1,
 	// 	Commands: []string{"test3"},
 	// 	FilePath: "./2d8da8da-ef9d-48a0-b7bb-a9c7ba6708dc",
-	// },
-	// { // NON mario
-	// 	Name:     "test",
-	// 	Weight:   1,
-	// 	Commands: []string{"test4"},
-	// 	FilePath: "./3ae4948e-2844-4225-b2c7-c98bd26d3d6d",
-	// },
-	// { // yay ononoki
-	// 	Name:     "test",
-	// 	Weight:   1,
-	// 	Commands: []string{"test5"},
-	// 	FilePath: "./3d4400d5-4f67-4b1c-949d-178ecd1b5f7a",
-	// },
-	// { // jpc merde
-	// 	Name:     "test",
-	// 	Weight:   1,
-	// 	Commands: []string{"test6"},
-	// 	FilePath: "./5bc2772b-42b0-482b-84a0-5abed1699c5b",
-	// },
-	// { // phoque aaaaah
-	// 	Name:     "test",
-	// 	Weight:   1,
-	// 	Commands: []string{"test7"},
-	// 	FilePath: "./6c2d8ab0-8b89-4eb9-8224-3b79b9fcad5c",
 	// },
 	// { // COIN
 	// 	Name:     "test",
@@ -395,59 +351,11 @@ var DefaultSounds = []*Sound{
 	// 	Commands: []string{"test8"},
 	// 	FilePath: "./6cfca518-cd2f-4921-b7fa-78b416184689",
 	// },
-	// { // aaaaaaaaaaaaaaaaaaaaah du cul
-	// 	Name:     "test",
-	// 	Weight:   1,
-	// 	Commands: []string{"test9"},
-	// 	FilePath: "./7ae0e157-6a69-4cc6-9c41-c84a7ccf8094",
-	// },
-	// { // blblbl
-	// 	Name:     "test",
-	// 	Weight:   1,
-	// 	Commands: []string{"test10"},
-	// 	FilePath: "./37f3f4fb-4310-4177-b3d6-bfd6bf0c284f",
-	// },
-	// { // denis brogniard
-	// 	Name:     "test",
-	// 	Weight:   1,
-	// 	Commands: []string{"test11"},
-	// 	FilePath: "./57c32237-d733-4a0f-a85c-035b4ef1b8a3",
-	// },
-	// { // vas y monte moi
-	// 	Name:     "test",
-	// 	Weight:   1,
-	// 	Commands: []string{"test12"},
-	// 	FilePath: "./89a3320f-ff51-4913-9b44-bb5d0ad29cf5",
-	// },
-	// { // tu viens d'appuyer sur mon ventre et j'ai des gazs
-	// 	Name:     "test",
-	// 	Weight:   1,
-	// 	Commands: []string{"test13"},
-	// 	FilePath: "./745ebcbb-ff43-437f-8d81-543190fa04c5",
-	// },
-	// { // kuwah
-	// 	Name:     "test",
-	// 	Weight:   1,
-	// 	Commands: []string{"test14"},
-	// 	FilePath: "./0919d54a-7c25-4ab8-b947-8822034890af",
-	// },
-	// { // margarine svp
-	// 	Name:     "test",
-	// 	Weight:   1,
-	// 	Commands: []string{"test15"},
-	// 	FilePath: "./53123f52-d5a0-4be1-af6b-2f3ac98f16ef",
-	// },
 	// { // merry christmas
 	// 	Name:     "test",
 	// 	Weight:   1,
 	// 	Commands: []string{"test16"},
 	// 	FilePath: "./58078b89-3468-4c54-a106-e6cf3ec39e6f",
-	// },
-	// { // nononononono
-	// 	Name:     "test",
-	// 	Weight:   1,
-	// 	Commands: []string{"test17"},
-	// 	FilePath: "./8058044c-075e-46fe-9a46-9319f1d9a864",
 	// },
 	// { // GET BENT
 	// 	Name:     "test",
@@ -455,23 +363,11 @@ var DefaultSounds = []*Sound{
 	// 	Commands: []string{"test18"},
 	// 	FilePath: "./73798386-5890-457f-9264-002c98d4acd9",
 	// },
-	// { // unacceptable
-	// 	Name:     "test",
-	// 	Weight:   1,
-	// 	Commands: []string{"test19"},
-	// 	FilePath: "./93533969-6ae7-495e-9d85-87e397814550",
-	// },
 	// { // shrug
 	// 	Name:     "test",
 	// 	Weight:   1,
 	// 	Commands: []string{"test20"},
 	// 	FilePath: "./a58f33b9-3e2a-48ef-9ad6-de223fab7f51",
-	// },
-	// { // monte moi cet obstacle
-	// 	Name:     "test",
-	// 	Weight:   1,
-	// 	Commands: []string{"test21"},
-	// 	FilePath: "./a026789d-3db1-4f55-82de-8730b11cf25b",
 	// },
 	// { // mandragore aaaaaaaaaaah
 	// 	Name:     "test",
@@ -479,23 +375,11 @@ var DefaultSounds = []*Sound{
 	// 	Commands: []string{"test22"},
 	// 	FilePath: "./aaaa7b0d-930b-4db0-88fc-8ee0db920bd4",
 	// },
-	// { // PUTEUH
-	// 	Name:     "test",
-	// 	Weight:   1,
-	// 	Commands: []string{"test23"},
-	// 	FilePath: "./c0753143-2e19-4429-84f7-55e5ced7f19c",
-	// },
 	// { // shrug
 	// 	Name:     "test",
 	// 	Weight:   1,
 	// 	Commands: []string{"test24"},
 	// 	FilePath: "./cdd6ed2c-c73e-4dba-a375-1595ffee12c7",
-	// },
-	// { // yay onichan peace peace
-	// 	Name:     "test",
-	// 	Weight:   1,
-	// 	Commands: []string{"test25"},
-	// 	FilePath: "./d5fb9e4c-6ce1-4ee0-9d5a-dc1f4e6f3d9c",
 	// },
 	// { // monte moi
 	// 	Name:     "test",
@@ -532,12 +416,6 @@ var DefaultSounds = []*Sound{
 	// 	Weight:   1,
 	// 	Commands: []string{"test31"},
 	// 	FilePath: "./edcd4e2a-c4b7-40ed-a1d9-c90a0043cfbf",
-	// },
-	// { // ui
-	// 	Name:     "test",
-	// 	Weight:   1,
-	// 	Commands: []string{"test32"},
-	// 	FilePath: "./f04a4278-7158-46e7-bbc9-cb7afe3a67c4",
 	// },
 	// { // ohayo
 	// 	Name:     "test",

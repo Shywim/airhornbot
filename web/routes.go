@@ -235,10 +235,14 @@ func EditSoundPostRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 		return
 	}*/
 
-	commands := r.MultipartForm.Value["commands"][0]
-	if commands == "" {
-		http.Error(w, err.Error(), http.StatusNotAcceptable)
+	commandsString := r.MultipartForm.Value["commands"]
+	if len(commandsString) == 0 {
+		http.Error(w, "At least one command is required", http.StatusNotAcceptable)
 		return
+	}
+	commands := []service.Command{}
+	for _, c := range commandsString {
+		commands = append(commands, service.Command{Command: c, Weight: 1})
 	}
 
 	soundID := ps.ByName("soundID")
@@ -300,6 +304,7 @@ func EditSoundPostRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 			Name:     r.MultipartForm.Value["name"][0],
 			FilePath: soundID,
 			GuildID:  guildID,
+			Commands: commands,
 		}
 
 		err = sound.Save()
@@ -313,6 +318,7 @@ func EditSoundPostRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 			Name:     r.MultipartForm.Value["name"][0],
 			FilePath: soundID,
 			GuildID:  guildID,
+			Commands: commands,
 		}
 
 		err = sound.Save()
