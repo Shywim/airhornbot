@@ -83,6 +83,11 @@ func random(s []*service.Sound, command string) *service.Sound {
 			total += c.Weight
 		}
 	}
+
+	log.WithFields(log.Fields{
+		"command": command,
+	}).Info("Found a total weight of ", total)
+
 	number := randomRange(0, total)
 	for _, sound := range s {
 		c := sound.FindCommand(command)
@@ -399,7 +404,7 @@ func endQueue(vc *discordgo.VoiceConnection, gID string) {
 
 func onReady(s *discordgo.Session, event *discordgo.Ready) {
 	log.Info("Recieved READY payload")
-	err := s.UpdateStatus(0, "airhorn.shywim.fr")
+	err := s.UpdateStatus(0, cfg.WebURL)
 	if err != nil {
 		log.WithError(err).Warning("Couldn't set status line")
 	}
@@ -515,6 +520,8 @@ func displayServerStats(cid, sid string) {
 		return
 	}
 
+	log.WithField("keys", keys).Info("test")
+
 	totalAirhorns, err := utilSumRedisKeys(keys.([]string))
 	if err != nil {
 		log.WithError(err).Error("Error reading stats")
@@ -575,8 +582,6 @@ func handleBotControlMessages(s *discordgo.Session, m *discordgo.MessageCreate, 
 		} else {
 			displayServerStats(m.ChannelID, g.ID)
 		}
-	} else if scontains(parts[1], "bomb") && len(parts) >= 4 {
-		airhornBomb(m.ChannelID, g, utilGetMentioned(s, m), parts[3])
 	}
 }
 
@@ -649,10 +654,7 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 		if mentioned {
-			// Bot control messages come from owner
-			if m.Author.ID == owner {
-				handleBotControlMessages(s, m, parts, guild)
-			}
+			handleBotControlMessages(s, m, parts, guild)
 			handleMentionMessages(s, m, parts, guild)
 		}
 		return

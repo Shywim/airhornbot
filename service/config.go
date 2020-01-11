@@ -23,6 +23,7 @@ type Cfg struct {
 	DataPath            string
 	PluginPath          string
 	DiscordOwnerID      string
+	WebURL              string
 }
 
 var config Cfg
@@ -54,6 +55,7 @@ func LoadConfig() (Cfg, error) {
 	cfg.DataPath = viper.GetString("data.data_path")
 	cfg.PluginPath = viper.GetString("data.plugins_path")
 	cfg.DiscordOwnerID = viper.GetString("discord.owner_id")
+	cfg.WebURL = viper.GetString("web.url")
 
 	if cfg.DBDriver == "mysql" {
 		cfg.DBHost = fmt.Sprintf("tcp(%s:%s)", cfg.DBHost, cfg.DBPort)
