@@ -1,11 +1,46 @@
 @import url("https://fonts.googleapis.com/css?family=Lato:400,700");
 
+/* VARS */
+:root {
+    --color-primary: #5d5d5a;
+    --color-accent: #ffa45c;
+    --color-accent2: #ffcdab;
+    --color-accent3: #fff4e3;
+}
+/* /VARS/ */
+
 /* UTILS */
 .disabled {
     pointer-events: none;
     opacity: 0.6;
 }
-/***/
+
+.little-text {
+    font-size: 0.65em;
+}
+
+.btn {
+    display: inline-block;
+    padding: 12px 16px;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: var(--color-accent);
+    border-radius: 8px;
+    color: white;
+    text-decoration: none;
+}
+
+hr {
+    border-top: 1px dotted #8c8b8b;
+	border-bottom: 1px dotted #fff;
+}
+
+.v-center {
+    align-self: center;
+}
+/* /UTILS/ */
 
 html,
 body {
@@ -19,6 +54,11 @@ body {
     background: #fff;
 }
 
+a {
+    color: inherit;
+    text-decoration: inherit;
+}
+
 .header {
 	display: flex;
 	flex-direction: row;
@@ -27,6 +67,87 @@ body {
 .header .title {
 	font-size: 1.2 rem;
 }
+
+.main-container {
+    display: flex;
+    flex-direction: row;
+    padding: 32px;
+}
+
+.sidebar-left {
+    margin-right: 32px;
+    width: 400px;
+}
+
+.sound-list-item {
+    display: flex;
+    flex-direction: row;
+    padding: 8px;
+    width: 350px;
+}
+
+h3.sound-name {
+    margin: 0;
+}
+
+.sound-commands {
+    
+}
+
+.sound-edit {
+    margin-right: 8px;
+}
+
+.sound-edit .btn-primary {
+    background: var(--color-accent2);
+    transition: background 0.3s ease-in;
+}
+
+.sound-edit .btn-primary:hover {
+    background: var(--color-accent);
+}
+
+/* SERVER CARD */
+.guild-card {
+    display: flex;
+    flex-direction: row;
+    padding: 16px;
+    background: var(--color-primary);
+    color: white;
+    border-radius: 16px;
+    margin-bottom: 16px;
+}
+
+.guild-card h2 {
+    margin: 4px 0 0 0;
+}
+
+.guild-card .guild-logo {
+    margin-right: 16px;
+}
+
+.guild-sounds {
+    margin-left: auto;
+}
+/* /SERVER CARD/ */
+
+/* GUILD LIST */
+.guild-list .guild-logo {
+    width: 60px;
+    height: 60px;
+}
+
+.guild-list .guild-card {
+    background: var(--color-accent3);
+    color: black;
+    cursor: pointer;
+}
+
+.guild-list .guild-card:hover {
+    background: var(--color-primary);
+    color: white;
+}
+/* /GUILD LIST/ */
 
 .table,
 .section {

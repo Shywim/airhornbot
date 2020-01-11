@@ -1,33 +1,42 @@
 {{ template "head.gohtml" .Context }}
+{{ $ctx := .Context }}
+{{ $gID := .Data.SelectedGuild.ID }}
 <body>
-  <div class="header">
-    <img class="guild-logo" src="{{ .Data.Icon }}">
-    <h2>Managing {{ .Data.Name }} sounds</h2>
-    <a class="back" href="{{ .Context.SiteURL }}/manage/{{ .Data.ID }}">Back</a>
-  </div>
+  <div class="main-container">
+    <div class="sidebar-left">
+      <div class="guild-card">
+        <img class="guild-logo" src="{{ .Data.SelectedGuild.Icon }}">
+        <h2><span class="little-text">Managing</span><br>{{ .Data.SelectedGuild.Name }}</h2>
+      </div>
+      <a class="btn btn-primary" href="{{ $ctx.SiteURL }}/manage/{{ .Data.SelectedGuild.ID}}/sound/new">➕ Add sound</a>
+      <hr>
+      <div class="guild-list">
+      {{ range $g := .Data.AirhornGuilds }}
+      {{ if ne $g.ID $gID }}
+        <a href="{{ $ctx.SiteURL }}/manage/{{ $g.ID}}">
+          <div class="guild-card">
+            <img class="guild-logo" src="{{ $g.Icon }}">
+            <h2 class="v-center">{{ $g.Name }}</h2>
+          </div>
+        </a>
+      {{ end }}
+      {{ end }}
+      </div>
+    </div>
 
-  <a class="button" href="{{ .Context.SiteURL }}/manage/{{ .Data.ID}}/sound/new">Add sound</a>
-  <table>
-  <thead>
-	<tr>
-	  <th>Name</th>
-	  <th>Commands</th>
-	  <th></th>
-	</tr>
-  </thead>
-  <tbody>
-  {{ $ctx := .Context }}
-  {{ $gID := .Data.ID }}
-  {{ range $s := .Data.Sounds }}
-    <tr>
-	  <td>{{ $s.Name }}</td>
-	  <td>{{ range $s.Commands }}{{ .Command }}{{ end }}</td>
-	  <td><a href="{{ $ctx.SiteURL }}/manage/{{ $gID }}/sound/{{ $s.ID }}" class="button">
-	    Edit
-	  </a></td>
-	</tr>
-  {{ end }}
-  </tbody>
-  </table>
+    <div>
+    {{ range $s := .Data.SelectedGuild.Sounds }}
+      <div class="sound-list-item">
+        <div class="sound-edit"><a href="{{ $ctx.SiteURL }}/manage/{{ $gID }}/sound/{{ $s.ID }}" class="btn btn-primary">
+          ✏ Edit
+        </a></div>
+        <div>
+          <h3 class="sound-name">{{ $s.Name }}</h3>
+          <div class="sound-commands">{{ range $s.Commands }}{{ .Command }}{{ end }}</div>
+        </div>
+      </div>
+    {{ end }}
+    </div>
+  </div>
 
   {{ template "footer.gohtml" .Context }}

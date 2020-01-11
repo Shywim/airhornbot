@@ -134,6 +134,13 @@ func ManageGuildRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 	}
 	defer session.Close()
 
+	userGuilds, err := service.GetGuildsWithSounds(session)
+	if err != nil {
+		// TODO: error
+		log.WithError(err).Error("Error retrieving user's guilds")
+		return
+	}
+
 	guild, err := service.GetGuildWithSounds(session, ps.ByName("guildID"))
 	if err != nil {
 		// TODO: error
@@ -147,7 +154,13 @@ func ManageGuildRoute(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 	tmplCtx := getContext(r)
 	tmplData := TemplateData{
 		Context: tmplCtx,
-		Data:    guild,
+		Data: struct {
+			SelectedGuild interface{}
+			AirhornGuilds []*service.Guild
+		}{
+			SelectedGuild: guild,
+			AirhornGuilds: userGuilds.AirhornGuilds,
+		},
 	}
 	renderTemplate(w, "guild.gohtml", tmplData)
 }

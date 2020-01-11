@@ -64,7 +64,7 @@ func GetGuildWithSounds(session *discordgo.Session, gID string) (Guild, error) {
 }
 
 // GetGuildsWithSounds retrieves a guild from Discord and its sounds
-func GetGuildsWithSounds(session *discordgo.Session) (interface{}, error) {
+func GetGuildsWithSounds(session *discordgo.Session) (*UserGuilds, error) {
 	guilds, err := session.UserGuilds(100, "", "")
 	if err != nil {
 		return nil, err

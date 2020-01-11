@@ -1,58 +1,40 @@
 {{ template "head.gohtml" .Context }}
+{{ $ctx := . }}
 <div class="content manage-section" id="manage-section">
   <div class="container">
     <div class="header">
-		  <h1 class="title">Manage my !airhorn</h1>
-      <a class="back" href="{{ .Context.SiteURL }}/">Back</a>
+      <h1 class="title">Manage my !airhorn</h1>
     </div>
 
 		<section>
       <h2 class="section-title">Your Guilds with !airhorn</h2>
-    <table id="airhorn-guilds" class="guild-list">
-      <thead>
-      <tr>
-        <th></th>
-        <th>Guild name</th>
-        <th>Custom sounds</th>
-        <th>Plays</th>
-      </tr>
-      </thead>
-      <tbody>
-      {{ $ctx := . }}
+
+      <div class="guild-list">
       {{ range $g := .Data.AirhornGuilds }}
-      <tr>
-        <td><img src="{{ $g.Icon }}" class="guild-logo"></td>
-				<td><a href="{{ $ctx.Context.SiteURL }}/manage/{{ $g.ID }}">
-				  <b>{{ $g.Name }}</b>
-				</a></td>
-        <td>{{ len $g.Sounds }}</td>
-		<!--<td>{\{ $g.Plays }}</td>-->
-      </tr>
+        <a href="{{ $ctx.Context.SiteURL }}/manage/{{ $g.ID}}">
+          <div class="guild-card">
+            <img class="guild-logo" src="{{ $g.Icon }}">
+            <h2 class="v-center">{{ $g.Name }}</h2>
+            <div class="guild-sounds v-center">{{ len $g.Sounds }}</div>
+          </div>
+        </a>
       {{ end }}
-      </tbody>
-    </table>
+      </div>
 		</section>
 
 		<section>
-    <h2 class="section-title">Boring guilds</h2>
-    <table id="boring-guilds" class="guild-list">
-      <thead>
-      <tr>
-        <th class="guild-icon"></th>
-        <th>Guild name</th>
-        <th></th>
-      </tr>
-      </thead>
-      <tbody>
+      <h2 class="section-title">Boring guilds</h2>
+
+      <div class="guild-list">
       {{ range $g := .Data.BoringGuilds }}
-      <tr>
-        <td><img src="{{ $g.Icon }}" class="guild-logo"></td>
-        <td><b>{{ $g.Name }}</b></td>
-        <td><a href="{{ $ctx.Context.SiteURL }}/login?guild_id={{ $g.ID }}" class="button">Login &gt;</a></td>
-      </tr>
+        <a href="{{ $ctx.Context.SiteURL }}/login?guild_id={{ $g.ID }}">
+          <div class="guild-card">
+            <img class="guild-logo" src="{{ $g.Icon }}">
+            <h2 class="v-center">{{ $g.Name }}</h2>
+          </div>
+        </a>
       {{ end }}
-      </tbody>
-    </table>
+      </div>
 		</section>
   </div>
 </div>
