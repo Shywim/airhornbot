@@ -108,6 +108,10 @@
   max-width: calc(-550px + 100%);
 }
 
+.footer-content .main-text a {
+  text-decoration: underline;
+}
+
 .footer .main-text .normal-text, .footer a .normal-text {
   opacity: 0.6;
 }
