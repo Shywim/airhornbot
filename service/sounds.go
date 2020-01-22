@@ -334,6 +334,11 @@ var DefaultSounds = []*Sound{
 		Commands: []Command{{Command: "wtc", Weight: 1}},
 		FilePath: "./default_sounds/wow_thatscool.dca",
 	},
+	{
+		Name:     "nootnoot",
+		Commands: []Command{{Command: "noot", Weight: 1}},
+		FilePath: "./default_sounds/nootnoot.dca",
+	},
 
 	// { // chat chelou
 	// 	Name:     "test",
